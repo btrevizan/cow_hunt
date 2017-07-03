@@ -239,7 +239,7 @@ int main(int argc, char* argv[])
 
     // Criamos uma janela do sistema operacional
     GLFWwindow* window;
-    window = glfwCreateWindow(800, 600, "INF01047", NULL, NULL);
+    window = glfwCreateWindow(800, 600, "Cow Hunt", NULL, NULL);
     if (!window)
     {
         glfwTerminate();
@@ -363,8 +363,8 @@ int main(int argc, char* argv[])
         // e ScrollCallback().
         float r = g_CameraDistance;
         float y = r*sin(g_CameraPhi);
-        float z = r*cos(g_CameraPhi)*cos(g_CameraTheta);
-        float x = r*cos(g_CameraPhi)*sin(g_CameraTheta);
+        float z = r*cos(g_CameraPhi)*cos(g_CameraTheta) + dz;
+        float x = r*cos(g_CameraPhi)*sin(g_CameraTheta) + dx;
 
         // Abaixo definimos as varáveis que efetivamente definem a câmera virtual.
         // Veja slide 159 do documento "Aula_08_Sistemas_de_Coordenadas.pdf".
@@ -1164,8 +1164,8 @@ void CursorPosCallback(GLFWwindow* window, double xpos, double ypos)
         g_CameraPhi   += 0.01f*dy;
 
         // Em coordenadas esféricas, o ângulo phi deve ficar entre -pi/2 e +pi/2.
-        float phimax = 3.141592f/2;
-        float phimin = -phimax;
+        float phimax = M_PI/2.0f;
+        float phimin = 0;
 
         if (g_CameraPhi > phimax)
             g_CameraPhi = phimax;

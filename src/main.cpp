@@ -182,7 +182,7 @@ float g_CameraDistance = 3.5f; // Distância da câmera para a origem
 
 // Posição do centro da nave
 float dx = 0.0f;
-float dy = 2.5f;
+float dy = 2.0f;
 float dz = 0.0f;
 
 // Variáveis que controlam rotação do antebraço
@@ -290,7 +290,7 @@ int main(int argc, char* argv[])
 
     // Construímos a representação de objetos geométricos através de malhas de triângulos
     //std::vector<const char*> objNames = {"Arvore", "Banheiro", "Casa", "CasaFazenda", "Celeiro", "Chao", "Disco", "Disco+Cone", "Silo", "Trator", "Turbina"};
-    std::vector<const char*> objNames = {"Arvore"};
+    std::vector<const char*> objNames = {"Arvore", "Banheiro", "Chao"};
     std::vector<const char*>::iterator it;
 
     int k = 0;
@@ -353,9 +353,9 @@ int main(int argc, char* argv[])
         // Desenhamos o disco voador que ficará no lookat da camera
         glm::mat4 model = Matrix_Identity(); // Transformação identidade de modelagem
 
-        // model = Matrix_Translate(dx, dy, dz);
-        // glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
-        // DrawVirtualObject("");
+        model = Matrix_Translate(dx, dy, dz) * Matrix_Scale(0.01f, 0.01f, 0.01f);
+        glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
+        DrawVirtualObject("Arvore");
 
         // Computamos a posição da câmera utilizando coordenadas esféricas.  As
         // variáveis g_CameraDistance, g_CameraPhi, e g_CameraTheta são
@@ -363,13 +363,13 @@ int main(int argc, char* argv[])
         // e ScrollCallback().
         float r = g_CameraDistance;
         float y = r*sin(g_CameraPhi);
-        float z = r*cos(g_CameraPhi)*cos(g_CameraTheta) + dz;
-        float x = r*cos(g_CameraPhi)*sin(g_CameraTheta) + dx;
+        float z = r*cos(g_CameraPhi)*cos(g_CameraTheta);
+        float x = r*cos(g_CameraPhi)*sin(g_CameraTheta);
 
         // Abaixo definimos as varáveis que efetivamente definem a câmera virtual.
         // Veja slide 159 do documento "Aula_08_Sistemas_de_Coordenadas.pdf".
         glm::vec4 camera_position_c  = glm::vec4(x,y,z,1.0f); // Ponto "c", centro da câmera
-        glm::vec4 camera_lookat_l    = glm::vec4(dx,dy,dz,1.0f); // Ponto "l", para onde a câmera (look-at) estará sempre olhando
+        glm::vec4 camera_lookat_l    = glm::vec4(dx, dy, dz, 1.0f); // Ponto "l", para onde a câmera (look-at) estará sempre olhando
         glm::vec4 camera_view_vector = camera_lookat_l - camera_position_c; // Vetor "view", sentido para onde a câmera está virada
         glm::vec4 camera_up_vector   = glm::vec4(0.0f,1.0f,0.0f,0.0f); // Vetor "up"
 
@@ -439,8 +439,6 @@ int main(int argc, char* argv[])
                 glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
                 DrawVirtualObject(obj.name.c_str());
             }
-
-            printf("\n");
         }
 
         // Pegamos um vértice com coordenadas de modelo (0.5, 0.5, 0.5, 1) e o
@@ -1219,8 +1217,8 @@ void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset)
     // movimentação da "rodinha", simulando um ZOOM.
     g_CameraDistance -= 0.1f*yoffset;
 
-    if (g_CameraDistance < 0.0f)
-        g_CameraDistance = 0.0f;
+    if (g_CameraDistance < 1.0f)
+        g_CameraDistance = 1.0f;
 }
 
 // Definição da função que será chamada sempre que o usuário pressionar alguma
@@ -1294,29 +1292,27 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
     }
 
     // Move forward
-    if (key == GLFW_KEY_W && action == GLFW_PRESS)
+    if (key == GLFW_KEY_W)
     {
-        dx = sin(g_CameraTheta) * (dx + 0.05f);
-        dz = cos(g_CameraTheta) * (dz + 0.05f);
+        
     }
 
     // Move backward
-    if (key == GLFW_KEY_S && action == GLFW_PRESS)
+    if (key == GLFW_KEY_S)
     {
-        dx = sin(g_CameraTheta) * (dx - 0.05f);
-        dz = cos(g_CameraTheta) * (dz - 0.05f);
+        
     }
 
     // Move to the left
-    if (key == GLFW_KEY_A && action == GLFW_PRESS)
+    if (key == GLFW_KEY_A)
     {
-
+        
     }
 
     // Move to the right
-    if (key == GLFW_KEY_D && action == GLFW_PRESS)
+    if (key == GLFW_KEY_D)
     {
-
+        
     }
 }
 

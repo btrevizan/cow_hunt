@@ -54,10 +54,6 @@ struct ObjModel
     std::vector<tinyobj::shape_t>    shapes;
     std::vector<tinyobj::material_t> materials;
 
-    std::vector<glm::vec3> pos;       // posiçoes das instancia do modelo
-    glm::vec3              animation; // coordenadas x,y,z para translacao
-    glm::vec3              angles;    // angulos de x,y,z para rotacao
-
     // Este construtor lê o modelo de um arquivo utilizando a biblioteca tinyobjloader.
     // Veja: https://github.com/syoyo/tinyobjloader
     ObjModel(const char* filename, const char* basepath = NULL, bool triangulate = true)
@@ -77,63 +73,6 @@ struct ObjModel
 
         if (!ret)
             throw std::runtime_error("\nErro ao carregar modelo.");
-
-        // Carregar posicoes
-        char pospath[100];
-        strcpy(pospath, filename);
-        strcat(pospath, ".pos");
-
-        std::ifstream posfile;
-        posfile.open(pospath);
-
-        if(!posfile)
-            printf("\nErro ao ler as posições do modelo.");
-        else
-        {
-            std::string line;
-            while(std::getline(posfile, line))
-            {
-                std::istringstream coord(line);
-                float x, y, z;
-
-                if (!(coord >> x >> y >> z))
-                {
-                    printf("\nOcorreu um erro durante a leitura das posições do modelo.");
-                    break;
-                }
-
-                glm::vec3 one_pos = glm::vec3(x, y, z);
-                pos.push_back(one_pos);
-            }
-
-            posfile.close();
-        }
-
-        // Carregar coeficientes de animacao
-        char anmpath[100];
-        strcpy(anmpath, filename);
-        strcat(anmpath, ".anm");
-
-        std::ifstream anm;
-        anm.open(anmpath);
-
-        if(!anm)
-            printf("\nErro ao ler os coeficientes de animação do modelo.");
-        else
-        {
-            std::string line;
-            std::getline(anm, line);
-
-            std::istringstream coord(line);
-            float x = 0.0f, y = 0.0f, z = 0.0f;
-
-            if (!(coord >> x >> y >> z))
-                printf("\nOcorreu um erro durante a leitura dos coeficientes de animação do modelo.");
-
-            animation = glm::vec3(x, y, z);
-
-            anm.close();
-        }
 
         printf("OK.\n");
     }
@@ -204,6 +143,9 @@ struct SceneObject
     glm::vec3    ambient; // refletancia ambiente
     glm::vec3    diffuse; // refletancia difusa
     glm::vec3    specular; // refletancia especular
+    glm::vec3    animation; // coordenadas x,y,z para translacao
+    glm::vec3    angles;    // angulos de x,y,z para rotacao
+    std::vector<glm::vec3> pos;       // posiçoes das instancia do modelo
 };
 
 // Abaixo definimos variáveis globais utilizadas em várias funções do código.
@@ -362,9 +304,7 @@ int main(int argc, char* argv[])
 
         ObjModel objmodel(filepath, basepath);
         ComputeNormals(&objmodel);
-        BuildTrianglesAndAddToVirtualScene(&objmodel, &k);
-
-        objmodel.angles = glm::vec3(0.0f, randAngle(), 0.0f);
+        BuildTrianglesAndAddToVirtualScene(&objmodel, &k, filepath);
     }
 
     if(argc > 1)
@@ -774,7 +714,7 @@ void ComputeNormals(ObjModel* model)
 }
 
 // Constrói triângulos para futura renderização a partir de um ObjModel.
-void BuildTrianglesAndAddToVirtualScene(ObjModel* model, int* k)
+void BuildTrianglesAndAddToVirtualScene(ObjModel* model, int* k, const char* filename)
 {
     GLuint vertex_array_object_id;
     glGenVertexArrays(1, &vertex_array_object_id);
@@ -861,6 +801,65 @@ void BuildTrianglesAndAddToVirtualScene(ObjModel* model, int* k)
         theobject.ambient  = glm::vec3(model->materials[shape].ambient[0], model->materials[shape].ambient[1], model->materials[shape].ambient[2]);
         theobject.diffuse  = glm::vec3(model->materials[shape].diffuse[0], model->materials[shape].diffuse[1], model->materials[shape].diffuse[2]);
         theobject.specular = glm::vec3(model->materials[shape].specular[0], model->materials[shape].specular[1], model->materials[shape].specular[2]);
+
+        theobject.angles   = glm::vec3(0.0f, randAngle(), 0.0f);
+
+        // Carregar posicoes
+        char pospath[100];
+        strcpy(pospath, filename);
+        strcat(pospath, ".pos");
+
+        std::ifstream posfile;
+        posfile.open(pospath);
+
+        if(!posfile)
+            printf("\nErro ao ler as posições do modelo.");
+        else
+        {
+            std::string line;
+            while(std::getline(posfile, line))
+            {
+                std::istringstream coord(line);
+                float x, y, z;
+
+                if (!(coord >> x >> y >> z))
+                {
+                    printf("\nOcorreu um erro durante a leitura das posições do modelo.");
+                    break;
+                }
+
+                glm::vec3 one_pos = glm::vec3(x, y, z);
+                theobject.pos.push_back(one_pos);
+            }
+
+            posfile.close();
+        }
+
+        // Carregar coeficientes de animacao
+        char anmpath[100];
+        strcpy(anmpath, filename);
+        strcat(anmpath, ".anm");
+
+        std::ifstream anm;
+        anm.open(anmpath);
+
+        if(!anm)
+            printf("\nErro ao ler os coeficientes de animação do modelo.");
+        else
+        {
+            std::string line;
+            std::getline(anm, line);
+
+            std::istringstream coord(line);
+            float x = 0.0f, y = 0.0f, z = 0.0f;
+
+            if (!(coord >> x >> y >> z))
+                printf("\nOcorreu um erro durante a leitura dos coeficientes de animação do modelo.");
+
+            theobject.animation = glm::vec3(x, y, z);
+
+            anm.close();
+        }
 
         g_VirtualScene[model->shapes[shape].name] = theobject;
 

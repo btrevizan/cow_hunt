@@ -85,7 +85,7 @@ void PopMatrix(glm::mat4& M);
 
 // Declaração de várias funções utilizadas em main().  Essas estão definidas
 // logo após a definição de main() neste arquivo.
-void BuildTrianglesAndAddToVirtualScene(ObjModel* model, int* k); // Constrói representação de um ObjModel como malha de triângulos para renderização
+void BuildTrianglesAndAddToVirtualScene(ObjModel* model, int* k, const char* filename); // Constrói representação de um ObjModel como malha de triângulos para renderização
 void ComputeNormals(ObjModel* model); // Computa normais de um ObjModel, caso não existam.
 void LoadShadersFromFiles(); // Carrega os shaders de vértice e fragmento, criando um programa de GPU
 void LoadTextureImage(const char* filename); // Função que carrega imagens de textura
@@ -423,18 +423,18 @@ int main(int argc, char* argv[])
         {
             SceneObject obj = dict.second;
 
-            for(it = obj.model->pos.begin(); it != obj.model->pos.end(); it++)
+            for(it = obj.pos.begin(); it != obj.pos.end(); it++)
             {
                 // Fazer teste de interseccao e manipular variaveis
 
                 glm::vec3 pos = *it;
 
-                model = Matrix_Translate(pos.x + obj.model->animation.x,
-                                         pos.y + obj.model->animation.y,
-                                         pos.z + obj.model->animation.z)
-                      * Matrix_Rotate_Z(obj.model->angles.z)
-                      * Matrix_Rotate_X(obj.model->angles.x)
-                      * Matrix_Rotate_Y(obj.model->angles.y)
+                model = Matrix_Translate(pos.x + obj.animation.x,
+                                         pos.y + obj.animation.y,
+                                         pos.z + obj.animation.z)
+                      * Matrix_Rotate_Z(obj.angles.z)
+                      * Matrix_Rotate_X(obj.angles.x)
+                      * Matrix_Rotate_Y(obj.angles.y)
                       * Matrix_Scale(0.01f, 0.01f, 0.01f);
 
                 glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));

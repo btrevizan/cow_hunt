@@ -239,6 +239,11 @@ float g_CameraTheta = 0.0f; // Ângulo no plano ZX em relação ao eixo Z
 float g_CameraPhi = 0.0f;   // Ângulo em relação ao eixo Y
 float g_CameraDistance = 3.5f; // Distância da câmera para a origem
 
+// Posição do centro da nave
+float dx = 0.0f;
+float dy = 2.5f;
+float dz = 0.0f;
+
 // Variáveis que controlam rotação do antebraço
 float g_ForearmAngleZ = 0.0f;
 float g_ForearmAngleX = 0.0f;
@@ -406,6 +411,13 @@ int main(int argc, char* argv[])
         // os shaders de vértice e fragmentos)
         glUseProgram(program_id);
 
+        // Desenhamos o disco voador que ficará no lookat da camera
+        glm::mat4 model = Matrix_Identity(); // Transformação identidade de modelagem
+
+        // model = Matrix_Translate(dx, dy, dz);
+        // glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
+        // DrawVirtualObject("");
+
         // Computamos a posição da câmera utilizando coordenadas esféricas.  As
         // variáveis g_CameraDistance, g_CameraPhi, e g_CameraTheta são
         // controladas pelo mouse do usuário. Veja as funções CursorPosCallback()
@@ -418,7 +430,7 @@ int main(int argc, char* argv[])
         // Abaixo definimos as varáveis que efetivamente definem a câmera virtual.
         // Veja slide 159 do documento "Aula_08_Sistemas_de_Coordenadas.pdf".
         glm::vec4 camera_position_c  = glm::vec4(x,y,z,1.0f); // Ponto "c", centro da câmera
-        glm::vec4 camera_lookat_l    = glm::vec4(0.0f,0.0f,0.0f,1.0f); // Ponto "l", para onde a câmera (look-at) estará sempre olhando
+        glm::vec4 camera_lookat_l    = glm::vec4(dx,dy,dz,1.0f); // Ponto "l", para onde a câmera (look-at) estará sempre olhando
         glm::vec4 camera_view_vector = camera_lookat_l - camera_position_c; // Vetor "view", sentido para onde a câmera está virada
         glm::vec4 camera_up_vector   = glm::vec4(0.0f,1.0f,0.0f,0.0f); // Vetor "up"
 
@@ -457,8 +469,6 @@ int main(int argc, char* argv[])
             float l = -r;
             projection = Matrix_Orthographic(l, r, b, t, nearplane, farplane);
         }
-
-        glm::mat4 model = Matrix_Identity(); // Transformação identidade de modelagem
 
         // Enviamos as matrizes "view" e "projection" para a placa de vídeo
         // (GPU). Veja o arquivo "shader_vertex.glsl", onde estas são
@@ -1283,6 +1293,32 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
         LoadShadersFromFiles();
         fprintf(stdout,"Shaders recarregados!\n");
         fflush(stdout);
+    }
+
+    // Move forward
+    if (key == GLFW_KEY_W && action == GLFW_PRESS)
+    {
+        dx = sin(g_CameraTheta) * (dx + 0.05f);
+        dz = cos(g_CameraTheta) * (dz + 0.05f);
+    }
+
+    // Move backward
+    if (key == GLFW_KEY_S && action == GLFW_PRESS)
+    {
+        dx = sin(g_CameraTheta) * (dx - 0.05f);
+        dz = cos(g_CameraTheta) * (dz - 0.05f);
+    }
+
+    // Move to the left
+    if (key == GLFW_KEY_A && action == GLFW_PRESS)
+    {
+
+    }
+
+    // Move to the right
+    if (key == GLFW_KEY_D && action == GLFW_PRESS)
+    {
+
     }
 }
 

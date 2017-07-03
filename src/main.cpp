@@ -438,6 +438,10 @@ int main(int argc, char* argv[])
 
                 glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
                 DrawVirtualObject(obj.name.c_str());
+
+                (*it).x = pos.x + obj.animation.x;
+                (*it).y = pos.y + obj.animation.y;
+                (*it).z = pos.z + obj.animation.z;
             }
         }
 
@@ -450,14 +454,14 @@ int main(int argc, char* argv[])
 
         // Imprimimos na tela os ângulos de Euler que controlam a rotação do
         // terceiro cubo.
-        TextRendering_ShowEulerAngles(window);
+        //TextRendering_ShowEulerAngles(window);
 
         // Imprimimos na informação sobre a matriz de projeção sendo utilizada.
-        TextRendering_ShowProjection(window);
+        //TextRendering_ShowProjection(window);
 
         // Imprimimos na tela informação sobre o número de quadros renderizados
         // por segundo (frames per second).
-        TextRendering_ShowFramesPerSecond(window);
+        //TextRendering_ShowFramesPerSecond(window);
 
         // O framebuffer onde a OpenGL executa as operações de renderização não
         // é o mesmo que está sendo mostrado para o usuário, caso contrário
@@ -620,7 +624,7 @@ void LoadShadersFromFiles()
     ks_uniform              = glGetUniformLocation(program_id, "ks");
 
     // Variáveis em "shader_fragment.glsl" para acesso das imagens de textura
-    //glUseProgram(program_id);
+    glUseProgram(program_id);
     //glUniform1i(glGetUniformLocation(program_id, "TextureImage0"), 0);
     //glUniform1i(glGetUniformLocation(program_id, "TextureImage1"), 1);
     //glUniform1i(glGetUniformLocation(program_id, "TextureImage2"), 2);
@@ -895,7 +899,7 @@ void BuildTrianglesAndAddToVirtualScene(ObjModel* model, int* k, const char* fil
         glBindBuffer(GL_ARRAY_BUFFER, VBO_texture_coefficients_id);
         glBufferData(GL_ARRAY_BUFFER, texture_coefficients.size() * sizeof(float), NULL, GL_STATIC_DRAW);
         glBufferSubData(GL_ARRAY_BUFFER, 0, texture_coefficients.size() * sizeof(float), texture_coefficients.data());
-        location = 2; // "(location = 1)" em "shader_vertex.glsl"
+        location = 2; // "(location = 2)" em "shader_vertex.glsl"
         number_of_dimensions = 2; // vec2 em "shader_vertex.glsl"
         glVertexAttribPointer(location, number_of_dimensions, GL_FLOAT, GL_FALSE, 0, 0);
         glEnableVertexAttribArray(location);
@@ -1590,6 +1594,17 @@ void PrintObjModelInfo(ObjModel* model)
 float randAngle()
 {
     return (float)rand() / ((float)(RAND_MAX/M_PI));
+}
+
+bool isIntersecting(SceneObject* obj1, SceneObject* obj2)
+{
+    glm::vec3 max1 = obj1->bbox_max;
+    glm::vec3 min1 = obj1->bbox_min;
+
+    glm::vec3 max2 = obj2->bbox_max;
+    glm::vec3 min2 = obj2->bbox_min;
+
+    return true;
 }
 
 // set makeprg=cd\ ..\ &&\ make\ run\ >/dev/null

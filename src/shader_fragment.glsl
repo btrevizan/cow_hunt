@@ -28,9 +28,9 @@ uniform vec3 kd;
 uniform vec3 ks;
 
 // Variáveis para acesso das imagens de textura
-//uniform sampler2D TextureImage0;
-//uniform sampler2D TextureImage1;
-//uniform sampler2D TextureImage2;
+uniform sampler2D TextureImage0;
+uniform sampler2D TextureImage1;
+uniform sampler2D TextureImage2;
 
 // O valor de saída ("out") de um Fragment Shader é a cor final do fragmento.
 out vec3 color;
@@ -63,13 +63,9 @@ void main()
     // Vetor que define o sentido da câmera em relação ao ponto atual.
     vec4 v = normalize(camera_position - p);
 
-    // Coordenadas de textura U e V
-    float U = 0.0;
-    float V = 0.0;
-
     // Obtemos a refletância difusa a partir da leitura da imagem TextureImage0
-    //vec3 Kd0 = vec3(0.0f, 0.0f, 0.0f); // texture(TextureImage0, vec2(U,V)).rgb;
-	//vec3 Kd1 = vec3(0.0f, 0.0f, 0.0f); // texture(TextureImage1, vec2(U,V)).rgb;
+    //vec3 Kd0 = texture(TextureImage0, texcoords).rgb;
+	//vec3 Kd1 = texture(TextureImage1, texcoords).rgb;
 
     // Equação de Iluminação
     float lambert = max(0, dot(n,l));

@@ -309,7 +309,7 @@ int main(int argc, char* argv[])
     if(argc > 1)
     {
         ObjModel model(argv[1]);
-        BuildTrianglesAndAddToVirtualScene(&model, &k);
+        BuildTrianglesAndAddToVirtualScene(&model, &k, argv[1]);
     }
 
     // Inicializamos o código para renderização de texto.

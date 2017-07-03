@@ -94,7 +94,7 @@ struct ObjModel
             while(std::getline(posfile, line))
             {
                 std::istringstream coord(line);
-                float x = 0.0f, y = 0.0f, z = 0.0f;
+                float x, y, z;
 
                 if (!(coord >> x >> y >> z))
                 {
@@ -102,7 +102,8 @@ struct ObjModel
                     break;
                 }
 
-                pos.push_back(glm::vec3(x, y, z));
+                glm::vec3 one_pos = glm::vec3(x, y, z);
+                pos.push_back(one_pos);
             }
 
             posfile.close();
@@ -342,7 +343,8 @@ int main(int argc, char* argv[])
     // LoadTextureImage("../../data/tc-earth_nightmap_citylights.gif"); // TextureImage1
 
     // Construímos a representação de objetos geométricos através de malhas de triângulos
-    std::vector<const char*> objNames = {"Arvore", "Banheiro", "Casa", "CasaFazenda", "Celeiro", "Chao", "Disco", "Disco+Cone", "Silo", "Trator", "Turbina"};
+    //std::vector<const char*> objNames = {"Arvore", "Banheiro", "Casa", "CasaFazenda", "Celeiro", "Chao", "Disco", "Disco+Cone", "Silo", "Trator", "Turbina"};
+    std::vector<const char*> objNames = {"Arvore"};
     std::vector<const char*>::iterator it;
 
     int k = 0;
@@ -470,6 +472,7 @@ int main(int argc, char* argv[])
         for(const auto& dict : g_VirtualScene)
         {
             SceneObject obj = dict.second;
+
             for(it = obj.model->pos.begin(); it != obj.model->pos.end(); it++)
             {
                 // Fazer teste de interseccao e manipular variaveis
@@ -481,11 +484,14 @@ int main(int argc, char* argv[])
                                          pos.z + obj.model->animation.z)
                       * Matrix_Rotate_Z(obj.model->angles.z)
                       * Matrix_Rotate_X(obj.model->angles.x)
-                      * Matrix_Rotate_Y(obj.model->angles.y);
+                      * Matrix_Rotate_Y(obj.model->angles.y)
+                      * Matrix_Scale(0.01f, 0.01f, 0.01f);
 
                 glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
                 DrawVirtualObject(obj.name.c_str());
             }
+
+            printf("\n");
         }
 
         // Pegamos um vértice com coordenadas de modelo (0.5, 0.5, 0.5, 1) e o

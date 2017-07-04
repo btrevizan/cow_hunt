@@ -58,7 +58,7 @@ struct ObjModel
     // Veja: https://github.com/syoyo/tinyobjloader
     ObjModel(const char* filename, const char* basepath = NULL, bool triangulate = true)
     {
-        printf("Carregando modelo \"%s\"... ", filename);
+        printf("Carregando modelo \"%s\"...\n", filename);
 
         std::string err;
 
@@ -206,6 +206,7 @@ GLuint program_id = 0;
 GLint model_uniform;
 GLint view_uniform;
 GLint projection_uniform;
+GLint obj_id_uniform;
 GLint bbox_min_uniform;
 GLint bbox_max_uniform;
 GLint ka_uniform;
@@ -284,10 +285,6 @@ int main(int argc, char* argv[])
     //
     LoadShadersFromFiles();
 
-    // Carregamos duas imagens para serem utilizadas como textura
-    // LoadTextureImage("../../data/tc-earth_daymap_surface.jpg");      // TextureImage0
-    // LoadTextureImage("../../data/tc-earth_nightmap_citylights.gif"); // TextureImage1
-
     // Construímos a representação de objetos geométricos através de malhas de triângulos
     //std::vector<const char*> objNames = {"Arvore", "Banheiro", "Casa", "CasaFazenda", "Celeiro", "Chao", "Disco", "Disco+Cone", "Silo", "Trator", "Turbina"};
     std::vector<const char*> objNames = {"Arvore", "Banheiro", "Chao"};
@@ -304,6 +301,9 @@ int main(int argc, char* argv[])
         ObjModel objmodel(filepath, basepath);
         ComputeNormals(&objmodel);
         BuildTrianglesAndAddToVirtualScene(&objmodel, &k, filepath);
+
+        // Carregamos textura do objeto
+        LoadTextureImage(filepath); // TextureImageK
     }
 
     if(argc > 1)
@@ -438,6 +438,10 @@ int main(int argc, char* argv[])
 
                 glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
                 DrawVirtualObject(obj.name.c_str());
+
+                (*it).x = pos.x + obj.animation.x;
+                (*it).y = pos.y + obj.animation.y;
+                (*it).z = pos.z + obj.animation.z;
             }
         }
 
@@ -450,14 +454,14 @@ int main(int argc, char* argv[])
 
         // Imprimimos na tela os ângulos de Euler que controlam a rotação do
         // terceiro cubo.
-        TextRendering_ShowEulerAngles(window);
+        //TextRendering_ShowEulerAngles(window);
 
         // Imprimimos na informação sobre a matriz de projeção sendo utilizada.
-        TextRendering_ShowProjection(window);
+        //TextRendering_ShowProjection(window);
 
         // Imprimimos na tela informação sobre o número de quadros renderizados
         // por segundo (frames per second).
-        TextRendering_ShowFramesPerSecond(window);
+        //TextRendering_ShowFramesPerSecond(window);
 
         // O framebuffer onde a OpenGL executa as operações de renderização não
         // é o mesmo que está sendo mostrado para o usuário, caso contrário
@@ -483,18 +487,22 @@ int main(int argc, char* argv[])
 // Função que carrega uma imagem para ser utilizada como textura
 void LoadTextureImage(const char* filename)
 {
-    printf("Carregando imagem \"%s\"... ", filename);
+    char filepath[100];
+    strcpy(filepath, filename);
+    strcat(filepath, ".png");
+
+    printf("\nCarregando imagem \"%s\"... ", filepath);
 
     // Primeiro fazemos a leitura da imagem do disco
     stbi_set_flip_vertically_on_load(true);
     int width;
     int height;
     int channels;
-    unsigned char *data = stbi_load(filename, &width, &height, &channels, 3);
+    unsigned char *data = stbi_load(filepath, &width, &height, &channels, 3);
 
     if ( data == NULL )
     {
-        fprintf(stderr, "ERROR: Cannot open image file \"%s\".\n", filename);
+        fprintf(stderr, "\nERROR: Cannot open image file \"%s\".\n", filepath);
         std::exit(EXIT_FAILURE);
     }
 
@@ -555,6 +563,9 @@ void DrawVirtualObject(const char* object_name)
     glUniform3f(ka_uniform, ambient.x, ambient.y, ambient.z);
     glUniform3f(kd_uniform, diffuse.x, diffuse.y, diffuse.z);
     glUniform3f(ks_uniform, specular.x, specular.y, specular.z);
+
+    int obj_id = g_VirtualScene[object_name].id;
+    glUniform1i(obj_id_uniform, obj_id);
 
     // Pedimos para a GPU rasterizar os vértices dos eixos XYZ
     // apontados pelo VAO como linhas. Veja a definição de
@@ -620,7 +631,7 @@ void LoadShadersFromFiles()
     ks_uniform              = glGetUniformLocation(program_id, "ks");
 
     // Variáveis em "shader_fragment.glsl" para acesso das imagens de textura
-    //glUseProgram(program_id);
+    glUseProgram(program_id);
     //glUniform1i(glGetUniformLocation(program_id, "TextureImage0"), 0);
     //glUniform1i(glGetUniformLocation(program_id, "TextureImage1"), 1);
     //glUniform1i(glGetUniformLocation(program_id, "TextureImage2"), 2);
@@ -859,8 +870,6 @@ void BuildTrianglesAndAddToVirtualScene(ObjModel* model, int* k, const char* fil
         }
 
         g_VirtualScene[model->shapes[shape].name] = theobject;
-
-        (*k) += 1;
     }
 
     GLuint VBO_model_coefficients_id;
@@ -895,7 +904,7 @@ void BuildTrianglesAndAddToVirtualScene(ObjModel* model, int* k, const char* fil
         glBindBuffer(GL_ARRAY_BUFFER, VBO_texture_coefficients_id);
         glBufferData(GL_ARRAY_BUFFER, texture_coefficients.size() * sizeof(float), NULL, GL_STATIC_DRAW);
         glBufferSubData(GL_ARRAY_BUFFER, 0, texture_coefficients.size() * sizeof(float), texture_coefficients.data());
-        location = 2; // "(location = 1)" em "shader_vertex.glsl"
+        location = 2; // "(location = 2)" em "shader_vertex.glsl"
         number_of_dimensions = 2; // vec2 em "shader_vertex.glsl"
         glVertexAttribPointer(location, number_of_dimensions, GL_FLOAT, GL_FALSE, 0, 0);
         glEnableVertexAttribArray(location);
@@ -910,6 +919,8 @@ void BuildTrianglesAndAddToVirtualScene(ObjModel* model, int* k, const char* fil
     // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0); // XXX Errado!
 
     glBindVertexArray(0);
+
+    (*k) += 1;
 }
 
 // Carrega um Vertex Shader de um arquivo. Veja definição de LoadShader() abaixo.
@@ -1590,6 +1601,11 @@ void PrintObjModelInfo(ObjModel* model)
 float randAngle()
 {
     return (float)rand() / ((float)(RAND_MAX/M_PI));
+}
+
+bool isObjIntersecting(SceneObject* obj1, SceneObject* obj2)
+{
+    return false;
 }
 
 // set makeprg=cd\ ..\ &&\ make\ run\ >/dev/null

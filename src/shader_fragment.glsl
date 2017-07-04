@@ -27,10 +27,21 @@ uniform vec3 ka;
 uniform vec3 kd;
 uniform vec3 ks;
 
+// Identificacao do obj
+uniform int id;
+
 // Variáveis para acesso das imagens de textura
-//uniform sampler2D TextureImage0;
-//uniform sampler2D TextureImage1;
-//uniform sampler2D TextureImage2;
+uniform sampler2D TextureImage0;
+uniform sampler2D TextureImage1;
+uniform sampler2D TextureImage2;
+uniform sampler2D TextureImage3;
+uniform sampler2D TextureImage4;
+uniform sampler2D TextureImage5;
+uniform sampler2D TextureImage6;
+uniform sampler2D TextureImage7;
+uniform sampler2D TextureImage8;
+uniform sampler2D TextureImage9;
+uniform sampler2D TextureImage10;
 
 // O valor de saída ("out") de um Fragment Shader é a cor final do fragmento.
 out vec3 color;
@@ -63,18 +74,64 @@ void main()
     // Vetor que define o sentido da câmera em relação ao ponto atual.
     vec4 v = normalize(camera_position - p);
 
-    // Coordenadas de textura U e V
-    float U = 0.0;
-    float V = 0.0;
+    // Obtemos a refletância difusa a partir da leitura da imagem TextureImageK
+    vec3 Kd0;
 
-    // Obtemos a refletância difusa a partir da leitura da imagem TextureImage0
-    //vec3 Kd0 = vec3(0.0f, 0.0f, 0.0f); // texture(TextureImage0, vec2(U,V)).rgb;
-	//vec3 Kd1 = vec3(0.0f, 0.0f, 0.0f); // texture(TextureImage1, vec2(U,V)).rgb;
+    switch(id)
+    {
+        case 0:
+            Kd0 = texture(TextureImage0, texcoords).rgb;
+            break;
+
+        case 1:
+            Kd0 = texture(TextureImage1, texcoords).rgb;
+            break;
+
+        case 2:
+            Kd0 = texture(TextureImage2, texcoords).rgb;
+            break;
+
+        case 3:
+            Kd0 = texture(TextureImage3, texcoords).rgb;
+            break;
+
+        case 4:
+            Kd0 = texture(TextureImage4, texcoords).rgb;
+            break;
+
+        case 5:
+            Kd0 = texture(TextureImage5, texcoords).rgb;
+            break;
+
+        case 6:
+            Kd0 = texture(TextureImage6, texcoords).rgb;
+            break;
+
+        case 7:
+            Kd0 = texture(TextureImage7, texcoords).rgb;
+            break;
+
+        case 8:
+            Kd0 = texture(TextureImage8, texcoords).rgb;
+            break;
+
+        case 9:
+            Kd0 = texture(TextureImage9, texcoords).rgb;
+            break;
+
+        case 10:
+            Kd0 = texture(TextureImage10, texcoords).rgb;
+            break;
+
+        default:
+            Kd0 = vec3(0.5f, 0.5f, 0.5f);
+            break;
+    }
 
     // Equação de Iluminação
     float lambert = max(0, dot(n,l));
 
-	color = (kd * lambert) + ka;
+    color = Kd0 * (lambert + 0.01);
 
     // Cor final com correção gamma, considerando monitor sRGB.
     // Veja https://en.wikipedia.org/w/index.php?title=Gamma_correction&oldid=751281772#Windows.2C_Mac.2C_sRGB_and_TV.2Fvideo_standard_gammas

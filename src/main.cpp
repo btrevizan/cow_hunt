@@ -58,7 +58,7 @@ struct ObjModel
     // Veja: https://github.com/syoyo/tinyobjloader
     ObjModel(const char* filename, const char* basepath = NULL, bool triangulate = true)
     {
-        printf("Carregando modelo \"%s\"... ", filename);
+        printf("Carregando modelo \"%s\"...\n", filename);
 
         std::string err;
 
@@ -206,6 +206,7 @@ GLuint program_id = 0;
 GLint model_uniform;
 GLint view_uniform;
 GLint projection_uniform;
+GLint obj_id_uniform;
 GLint bbox_min_uniform;
 GLint bbox_max_uniform;
 GLint ka_uniform;
@@ -284,10 +285,6 @@ int main(int argc, char* argv[])
     //
     LoadShadersFromFiles();
 
-    // Carregamos duas imagens para serem utilizadas como textura
-    // LoadTextureImage("../../data/tc-earth_daymap_surface.jpg");      // TextureImage0
-    // LoadTextureImage("../../data/tc-earth_nightmap_citylights.gif"); // TextureImage1
-
     // Construímos a representação de objetos geométricos através de malhas de triângulos
     //std::vector<const char*> objNames = {"Arvore", "Banheiro", "Casa", "CasaFazenda", "Celeiro", "Chao", "Disco", "Disco+Cone", "Silo", "Trator", "Turbina"};
     std::vector<const char*> objNames = {"Arvore", "Banheiro", "Chao"};
@@ -304,6 +301,9 @@ int main(int argc, char* argv[])
         ObjModel objmodel(filepath, basepath);
         ComputeNormals(&objmodel);
         BuildTrianglesAndAddToVirtualScene(&objmodel, &k, filepath);
+
+        // Carregamos textura do objeto
+        LoadTextureImage(filepath); // TextureImageK
     }
 
     if(argc > 1)
@@ -487,18 +487,22 @@ int main(int argc, char* argv[])
 // Função que carrega uma imagem para ser utilizada como textura
 void LoadTextureImage(const char* filename)
 {
-    printf("Carregando imagem \"%s\"... ", filename);
+    char filepath[100];
+    strcpy(filepath, filename);
+    strcat(filepath, ".png");
+
+    printf("\nCarregando imagem \"%s\"... ", filepath);
 
     // Primeiro fazemos a leitura da imagem do disco
     stbi_set_flip_vertically_on_load(true);
     int width;
     int height;
     int channels;
-    unsigned char *data = stbi_load(filename, &width, &height, &channels, 3);
+    unsigned char *data = stbi_load(filepath, &width, &height, &channels, 3);
 
     if ( data == NULL )
     {
-        fprintf(stderr, "ERROR: Cannot open image file \"%s\".\n", filename);
+        fprintf(stderr, "\nERROR: Cannot open image file \"%s\".\n", filepath);
         std::exit(EXIT_FAILURE);
     }
 
@@ -559,6 +563,9 @@ void DrawVirtualObject(const char* object_name)
     glUniform3f(ka_uniform, ambient.x, ambient.y, ambient.z);
     glUniform3f(kd_uniform, diffuse.x, diffuse.y, diffuse.z);
     glUniform3f(ks_uniform, specular.x, specular.y, specular.z);
+
+    int obj_id = g_VirtualScene[object_name].id;
+    glUniform1i(obj_id_uniform, obj_id);
 
     // Pedimos para a GPU rasterizar os vértices dos eixos XYZ
     // apontados pelo VAO como linhas. Veja a definição de
@@ -863,8 +870,6 @@ void BuildTrianglesAndAddToVirtualScene(ObjModel* model, int* k, const char* fil
         }
 
         g_VirtualScene[model->shapes[shape].name] = theobject;
-
-        (*k) += 1;
     }
 
     GLuint VBO_model_coefficients_id;
@@ -914,6 +919,8 @@ void BuildTrianglesAndAddToVirtualScene(ObjModel* model, int* k, const char* fil
     // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0); // XXX Errado!
 
     glBindVertexArray(0);
+
+    (*k) += 1;
 }
 
 // Carrega um Vertex Shader de um arquivo. Veja definição de LoadShader() abaixo.
@@ -1596,15 +1603,9 @@ float randAngle()
     return (float)rand() / ((float)(RAND_MAX/M_PI));
 }
 
-bool isIntersecting(SceneObject* obj1, SceneObject* obj2)
+bool isObjIntersecting(SceneObject* obj1, SceneObject* obj2)
 {
-    glm::vec3 max1 = obj1->bbox_max;
-    glm::vec3 min1 = obj1->bbox_min;
-
-    glm::vec3 max2 = obj2->bbox_max;
-    glm::vec3 min2 = obj2->bbox_min;
-
-    return true;
+    return false;
 }
 
 // set makeprg=cd\ ..\ &&\ make\ run\ >/dev/null

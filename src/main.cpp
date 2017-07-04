@@ -1294,25 +1294,25 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
     // Move forward
     if (key == GLFW_KEY_W)
     {
-        
+
     }
 
     // Move backward
     if (key == GLFW_KEY_S)
     {
-        
+
     }
 
     // Move to the left
     if (key == GLFW_KEY_A)
     {
-        
+
     }
 
     // Move to the right
     if (key == GLFW_KEY_D)
     {
-        
+
     }
 }
 

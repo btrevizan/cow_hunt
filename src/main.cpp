@@ -185,13 +185,15 @@ float dx = 0.0f;
 float dy = 2.0f;
 float dz = 0.0f;
 
-// Variáveis que controlam rotação do antebraço
-float g_ForearmAngleZ = 0.0f;
-float g_ForearmAngleX = 0.0f;
+// Variáveis que controlam o movimento da nave
+bool wKeyPressed = false;
+bool sKeyPressed = false;
+bool aKeyPressed = false;
+bool dKeyPressed = false;
 
-// Variáveis que controlam translação do torso
-float g_TorsoPositionX = 0.0f;
-float g_TorsoPositionY = 0.0f;
+// Camera
+glm::vec4 camera_position_c  = glm::vec4(1.0f,1.0f,1.0f,1.0f); // Ponto "c", centro da câmera
+glm::vec4 camera_up_vector   = glm::vec4(0.0f,1.0f,0.0f,0.0f); // Vetor "up"
 
 // Variável que controla o tipo de projeção utilizada: perspectiva ou ortográfica.
 bool g_UsePerspectiveProjection = true;
@@ -329,6 +331,9 @@ int main(int argc, char* argv[])
     glm::mat4 the_model;
     glm::mat4 the_view;
 
+    // Velocidade do movimento
+    float delta = 0.1f;
+
     // Ficamos em loop, renderizando, até que o usuário feche a janela
     while (!glfwWindowShouldClose(window))
     {
@@ -353,25 +358,47 @@ int main(int argc, char* argv[])
         // Desenhamos o disco voador que ficará no lookat da camera
         glm::mat4 model = Matrix_Identity(); // Transformação identidade de modelagem
 
-        model = Matrix_Translate(dx, dy, dz) * Matrix_Scale(0.01f, 0.01f, 0.01f);
-        glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
-        DrawVirtualObject("Arvore");
-
         // Computamos a posição da câmera utilizando coordenadas esféricas.  As
         // variáveis g_CameraDistance, g_CameraPhi, e g_CameraTheta são
         // controladas pelo mouse do usuário. Veja as funções CursorPosCallback()
         // e ScrollCallback().
         float r = g_CameraDistance;
-        float y = r*sin(g_CameraPhi);
-        float z = r*cos(g_CameraPhi)*cos(g_CameraTheta);
-        float x = r*cos(g_CameraPhi)*sin(g_CameraTheta);
+        float y = r*sin(-g_CameraPhi);
+        float z = r*cos(-g_CameraPhi)*cos(g_CameraTheta);
+        float x = r*cos(-g_CameraPhi)*sin(g_CameraTheta);
 
-        // Abaixo definimos as varáveis que efetivamente definem a câmera virtual.
-        // Veja slide 159 do documento "Aula_08_Sistemas_de_Coordenadas.pdf".
-        glm::vec4 camera_position_c  = glm::vec4(x,y,z,1.0f); // Ponto "c", centro da câmera
-        glm::vec4 camera_lookat_l    = glm::vec4(dx, dy, dz, 1.0f); // Ponto "l", para onde a câmera (look-at) estará sempre olhando
-        glm::vec4 camera_view_vector = camera_lookat_l - camera_position_c; // Vetor "view", sentido para onde a câmera está virada
-        glm::vec4 camera_up_vector   = glm::vec4(0.0f,1.0f,0.0f,0.0f); // Vetor "up"
+        // Abaixo definimos as variáveis que efetivamente definem a câmera virtual.
+        glm::vec4 camera_view_vector = glm::vec4(x,y,z,1.0f); // Vetor "view", sentido para onde a câmera está virada
+
+        // Movimentos possíveis da camera
+        // W: para frente
+        // S: para trás
+        // A: para a esquerda
+        // D: para a direita
+        glm::vec4 w = -camera_view_vector;
+        glm::vec4 u = crossproduct(camera_up_vector, w);
+
+        // Normalizamos os vetores u e w
+        w = w / norm(w);
+        u = u / norm(u);
+
+        if(wKeyPressed) // frente
+            camera_position_c += delta * (-w);
+
+        if(sKeyPressed) // ré
+            camera_position_c += delta * w;
+
+        if(aKeyPressed) // esquerda
+            camera_position_c += delta * (-u);
+
+        if(dKeyPressed) // direita
+            camera_position_c += delta * u;
+
+        // Computamos o disco voador em relacao a camera
+        glm::vec4 l = camera_position_c + camera_view_vector;
+        model = Matrix_Translate(l.x, l.y, l.z) * Matrix_Scale(0.01f, 0.01f, 0.01f);
+        glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
+        DrawVirtualObject("Arvore");
 
         // Computamos a matriz "View" utilizando os parâmetros da câmera para
         // definir o sistema de coordenadas da câmera.  Veja slide 162 do
@@ -1302,29 +1329,30 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
         fflush(stdout);
     }
 
-    // Move forward
-    if (key == GLFW_KEY_W)
-    {
+    // Ativa ou não as variáveis de movimento
+    if (key == GLFW_KEY_W && action == GLFW_PRESS)
+        wKeyPressed = true;
 
-    }
+    if (key == GLFW_KEY_W && action == GLFW_RELEASE)
+        wKeyPressed = false;
 
-    // Move backward
-    if (key == GLFW_KEY_S)
-    {
+    if (key == GLFW_KEY_S && action == GLFW_PRESS)
+        sKeyPressed = true;
 
-    }
+    if (key == GLFW_KEY_S && action == GLFW_RELEASE)
+        sKeyPressed = false;
 
-    // Move to the left
-    if (key == GLFW_KEY_A)
-    {
+    if (key == GLFW_KEY_A && action == GLFW_PRESS)
+        aKeyPressed = true;
 
-    }
+    if (key == GLFW_KEY_A && action == GLFW_RELEASE)
+        aKeyPressed = false;
 
-    // Move to the right
-    if (key == GLFW_KEY_D)
-    {
+    if (key == GLFW_KEY_D && action == GLFW_PRESS)
+        dKeyPressed = true;
 
-    }
+    if (key == GLFW_KEY_D && action == GLFW_RELEASE)
+        dKeyPressed = false;
 }
 
 // Definimos o callback para impressão de erros da GLFW no terminal

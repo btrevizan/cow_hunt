@@ -220,6 +220,7 @@ GLuint g_NumLoadedTextures = 0;
 
 #define M_PI 3.14159265358979323846
 float randAngle(); // gera um valor aleatorio entre 0 e PI
+float rad(float d); // converte graus para radianos
 bool collision(SceneObject* obj1, SceneObject* obj2); // detecta a colisão entre objetos
 bool isIntersecting(SceneObject* obj1, SceneObject* obj2); // detecta se um objeto intersecta o outro
 
@@ -293,8 +294,7 @@ int main(int argc, char* argv[])
     LoadShadersFromFiles();
 
     // Construímos a representação de objetos geométricos através de malhas de triângulos
-    //std::vector<const char*> objNames = {"Arvore", "Banheiro", "Casa", "CasaFazenda", "Celeiro", "Chao", "Disco", "Disco+Cone", "Silo", "Trator", "Turbina"};
-    std::vector<const char*> objNames = {"arvore", "banheiro", "chao", "disco"};
+    std::vector<const char*> objNames = {"arvore","banheiro","casa","celeiro","chao","cone","disco","silo","trator","turbina","vaca"};
     std::vector<const char*>::iterator it;
 
     int k = 0;
@@ -400,7 +400,7 @@ int main(int argc, char* argv[])
         model = Matrix_Identity(); // Transformação identidade de modelagem
 
         glm::vec4 l = camera_position_c + camera_view_vector;
-        model = Matrix_Translate(0.0f, 0.0f, 5.0f);
+        model = Matrix_Translate(l.x, l.y, l.z);
         glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
         DrawVirtualObject("disco");
 
@@ -849,8 +849,6 @@ void BuildTrianglesAndAddToVirtualScene(ObjModel* model, int* k, const char* fil
         theobject.diffuse  = glm::vec3(model->materials[shape].diffuse[0], model->materials[shape].diffuse[1], model->materials[shape].diffuse[2]);
         theobject.specular = glm::vec3(model->materials[shape].specular[0], model->materials[shape].specular[1], model->materials[shape].specular[2]);
 
-        theobject.angles   = glm::vec3(0.0f, randAngle(), 0.0f);
-
         // Carregar posicoes
         char pospath[100];
         strcpy(pospath, filename);
@@ -864,10 +862,22 @@ void BuildTrianglesAndAddToVirtualScene(ObjModel* model, int* k, const char* fil
         else
         {
             std::string line;
+
+            // Primeira linha do arquivo define a rotacao do obj
+            std::getline(posfile, line);
+            std::istringstream rot(line);
+            float x, y, z;
+
+            rot >> x >> y >> z;
+
+            if(x == 360.0f && y == 360.0f && z == 360.0f)
+                theobject.angles = glm::vec3(0.0f, randAngle(), 0.0f);
+            else
+                theobject.angles = glm::vec3(rad(x), rad(y), rad(z));
+
             while(std::getline(posfile, line))
             {
                 std::istringstream coord(line);
-                float x, y, z;
 
                 if (!(coord >> x >> y >> z))
                 {
@@ -1621,6 +1631,11 @@ void PrintObjModelInfo(ObjModel* model)
 float randAngle()
 {
     return (float)rand() / ((float)(RAND_MAX/M_PI));
+}
+
+float rad(float d)
+{
+    return (d * 180) / M_PI;
 }
 
 bool isIntersecting(SceneObject* obj1, SceneObject* obj2)

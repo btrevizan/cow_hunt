@@ -125,6 +125,8 @@ void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
 
 #define M_PI 3.14159265358979323846
 float randAngle(); // gera um valor aleatorio entre 0 e PI
+bool collision(SceneObject* obj1, SceneObject* obj2); // detecta a colisão entre objetos
+bool isIntersecting(SceneObject* obj1, SceneObject* obj2); // detecta se um objeto intersecta o outro
 
 // Definimos uma estrutura que armazenará dados necessários para renderizar
 // cada objeto da cena virtual.
@@ -194,6 +196,9 @@ bool dKeyPressed = false;
 // Camera
 glm::vec4 camera_position_c  = glm::vec4(1.0f,1.0f,1.0f,1.0f); // Ponto "c", centro da câmera
 glm::vec4 camera_up_vector   = glm::vec4(0.0f,1.0f,0.0f,0.0f); // Vetor "up"
+
+// Matriz do modelo, utilizada na detecção de colisão
+glm::mat4 model;
 
 // Variável que controla o tipo de projeção utilizada: perspectiva ou ortográfica.
 bool g_UsePerspectiveProjection = true;
@@ -355,9 +360,6 @@ int main(int argc, char* argv[])
         // os shaders de vértice e fragmentos)
         glUseProgram(program_id);
 
-        // Desenhamos o disco voador que ficará no lookat da camera
-        glm::mat4 model = Matrix_Identity(); // Transformação identidade de modelagem
-
         // Computamos a posição da câmera utilizando coordenadas esféricas.  As
         // variáveis g_CameraDistance, g_CameraPhi, e g_CameraTheta são
         // controladas pelo mouse do usuário. Veja as funções CursorPosCallback()
@@ -394,7 +396,9 @@ int main(int argc, char* argv[])
         if(dKeyPressed) // direita
             camera_position_c += delta * u;
 
-        // Computamos o disco voador em relacao a camera
+        // Desenhamos o disco voador em relação a camera
+        model = Matrix_Identity(); // Transformação identidade de modelagem
+
         glm::vec4 l = camera_position_c + camera_view_vector;
         model = Matrix_Translate(l.x, l.y, l.z) * Matrix_Scale(0.01f, 0.01f, 0.01f);
         glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
@@ -1631,9 +1635,49 @@ float randAngle()
     return (float)rand() / ((float)(RAND_MAX/M_PI));
 }
 
-bool isObjIntersecting(SceneObject* obj1, SceneObject* obj2)
+bool isIntersecting(SceneObject* obj1, SceneObject* obj2)
 {
+    // Pontos max e min da bounding box já transformados pela matriz do modelo
+    glm::vec3 bbox = obj1->bbox_max;
+    glm::vec4 max1 = model * glm::vec4(bbox.x, bbox.y, bbox.z, 1.0f);
+    bbox = obj1->bbox_min;
+    glm::vec4 min1 = model * glm::vec4(bbox.x, bbox.y, bbox.z, 1.0f);
+
+    bbox = obj2->bbox_max;
+    glm::vec4 max2 = model * glm::vec4(bbox.x, bbox.y, bbox.z, 1.0f);
+    bbox = obj2->bbox_min;
+    glm::vec4 min2 = model * glm::vec4(bbox.x, bbox.y, bbox.z, 1.0f);
+
+    // Testa se obj1 tem um canto inferior sobre do obj2
+    if (min1.x >= min2.x && min1.x <= max2.x &&
+        min1.y >= min2.y && min1.y <= max2.y &&
+        min1.z >= min2.z && min1.z <= max2.z)
+        return true;
+
+    // Testa se obj1 tem um canto superior sobre do obj2
+    if (max1.x >= min2.x && max1.x <= max2.x &&
+        max1.y >= min2.y && max1.y <= max2.y &&
+        max1.z >= min2.z && max1.z <= max2.z)
+        return true;
+
+    // Testa se obj1 está "dentro" do obj2
+    if (min1.x >= min2.x && min1.x <= max2.x &&
+        max1.y >= min2.y && max1.y <= max2.y &&
+        min1.z >= min2.z && min1.z <= max2.z)
+        return true;
+
+    // Testa se obj1 está "dentro" do obj2
+    if (max1.x >= min2.x && max1.x <= max2.x &&
+        min1.y >= min2.y && min1.y <= max2.y &&
+        max1.z >= min2.z && max1.z <= max2.z)
+        return true;
+
     return false;
+}
+
+bool collision(SceneObject* obj1, SceneObject* obj2)
+{
+    return isIntersecting(obj1, obj2) || isIntersecting(obj2, obj1);
 }
 
 // set makeprg=cd\ ..\ &&\ make\ run\ >/dev/null

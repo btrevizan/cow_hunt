@@ -123,11 +123,6 @@ void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
 void CursorPosCallback(GLFWwindow* window, double xpos, double ypos);
 void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
 
-#define M_PI 3.14159265358979323846
-float randAngle(); // gera um valor aleatorio entre 0 e PI
-bool collision(SceneObject* obj1, SceneObject* obj2); // detecta a colisão entre objetos
-bool isIntersecting(SceneObject* obj1, SceneObject* obj2); // detecta se um objeto intersecta o outro
-
 // Definimos uma estrutura que armazenará dados necessários para renderizar
 // cada objeto da cena virtual.
 struct SceneObject
@@ -223,6 +218,11 @@ GLint ks_uniform;
 // Número de texturas carregadas pela função LoadTextureImage()
 GLuint g_NumLoadedTextures = 0;
 
+#define M_PI 3.14159265358979323846
+float randAngle(); // gera um valor aleatorio entre 0 e PI
+bool collision(SceneObject* obj1, SceneObject* obj2); // detecta a colisão entre objetos
+bool isIntersecting(SceneObject* obj1, SceneObject* obj2); // detecta se um objeto intersecta o outro
+
 int main(int argc, char* argv[])
 {
     // Inicializamos a biblioteca GLFW, utilizada para criar uma janela do
@@ -294,7 +294,7 @@ int main(int argc, char* argv[])
 
     // Construímos a representação de objetos geométricos através de malhas de triângulos
     //std::vector<const char*> objNames = {"Arvore", "Banheiro", "Casa", "CasaFazenda", "Celeiro", "Chao", "Disco", "Disco+Cone", "Silo", "Trator", "Turbina"};
-    std::vector<const char*> objNames = {"Arvore", "Banheiro", "Chao"};
+    std::vector<const char*> objNames = {"arvore", "banheiro", "chao", "disco"};
     std::vector<const char*>::iterator it;
 
     int k = 0;
@@ -364,13 +364,13 @@ int main(int argc, char* argv[])
         // variáveis g_CameraDistance, g_CameraPhi, e g_CameraTheta são
         // controladas pelo mouse do usuário. Veja as funções CursorPosCallback()
         // e ScrollCallback().
-        float r = g_CameraDistance;
+        float r = g_CameraDistance + 5;
         float y = r*sin(-g_CameraPhi);
         float z = r*cos(-g_CameraPhi)*cos(g_CameraTheta);
         float x = r*cos(-g_CameraPhi)*sin(g_CameraTheta);
 
         // Abaixo definimos as variáveis que efetivamente definem a câmera virtual.
-        glm::vec4 camera_view_vector = glm::vec4(x,y,z,1.0f); // Vetor "view", sentido para onde a câmera está virada
+        glm::vec4 camera_view_vector = glm::vec4(x,y,z,0.0f); // Vetor "view", sentido para onde a câmera está virada
 
         // Movimentos possíveis da camera
         // W: para frente
@@ -400,9 +400,9 @@ int main(int argc, char* argv[])
         model = Matrix_Identity(); // Transformação identidade de modelagem
 
         glm::vec4 l = camera_position_c + camera_view_vector;
-        model = Matrix_Translate(l.x, l.y, l.z) * Matrix_Scale(0.01f, 0.01f, 0.01f);
+        model = Matrix_Translate(0.0f, 0.0f, 5.0f);
         glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
-        DrawVirtualObject("Arvore");
+        DrawVirtualObject("disco");
 
         // Computamos a matriz "View" utilizando os parâmetros da câmera para
         // definir o sistema de coordenadas da câmera.  Veja slide 162 do
@@ -455,8 +455,6 @@ int main(int argc, char* argv[])
 
             for(it = obj.pos.begin(); it != obj.pos.end(); it++)
             {
-                // Fazer teste de interseccao e manipular variaveis
-
                 glm::vec3 pos = *it;
 
                 model = Matrix_Translate(pos.x + obj.animation.x,
@@ -464,8 +462,7 @@ int main(int argc, char* argv[])
                                          pos.z + obj.animation.z)
                       * Matrix_Rotate_Z(obj.angles.z)
                       * Matrix_Rotate_X(obj.angles.x)
-                      * Matrix_Rotate_Y(obj.angles.y)
-                      * Matrix_Scale(0.01f, 0.01f, 0.01f);
+                      * Matrix_Rotate_Y(obj.angles.y);
 
                 glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
                 DrawVirtualObject(obj.name.c_str());
@@ -473,6 +470,8 @@ int main(int argc, char* argv[])
                 (*it).x = pos.x + obj.animation.x;
                 (*it).y = pos.y + obj.animation.y;
                 (*it).z = pos.z + obj.animation.z;
+
+                //printf("%d\n", collision(obj, g_VirtualScene["arvore"]))
             }
         }
 
@@ -660,12 +659,21 @@ void LoadShadersFromFiles()
     ka_uniform              = glGetUniformLocation(program_id, "ka");
     kd_uniform              = glGetUniformLocation(program_id, "kd");
     ks_uniform              = glGetUniformLocation(program_id, "ks");
+    obj_id_uniform          = glGetUniformLocation(program_id, "obj_id");
 
     // Variáveis em "shader_fragment.glsl" para acesso das imagens de textura
     glUseProgram(program_id);
-    //glUniform1i(glGetUniformLocation(program_id, "TextureImage0"), 0);
-    //glUniform1i(glGetUniformLocation(program_id, "TextureImage1"), 1);
-    //glUniform1i(glGetUniformLocation(program_id, "TextureImage2"), 2);
+    glUniform1i(glGetUniformLocation(program_id, "TextureImage0"), 0);
+    glUniform1i(glGetUniformLocation(program_id, "TextureImage1"), 1);
+    glUniform1i(glGetUniformLocation(program_id, "TextureImage2"), 2);
+    glUniform1i(glGetUniformLocation(program_id, "TextureImage3"), 3);
+    glUniform1i(glGetUniformLocation(program_id, "TextureImage4"), 4);
+    glUniform1i(glGetUniformLocation(program_id, "TextureImage5"), 5);
+    glUniform1i(glGetUniformLocation(program_id, "TextureImage6"), 6);
+    glUniform1i(glGetUniformLocation(program_id, "TextureImage7"), 7);
+    glUniform1i(glGetUniformLocation(program_id, "TextureImage8"), 8);
+    glUniform1i(glGetUniformLocation(program_id, "TextureImage9"), 9);
+    glUniform1i(glGetUniformLocation(program_id, "TextureImage10"), 10);
     glUseProgram(0);
 }
 
@@ -942,6 +950,8 @@ void BuildTrianglesAndAddToVirtualScene(ObjModel* model, int* k, const char* fil
         glBindBuffer(GL_ARRAY_BUFFER, 0);
     }
 
+    (*k) += 1;
+
     GLuint indices_id;
     glGenBuffers(1, &indices_id);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indices_id);
@@ -950,8 +960,6 @@ void BuildTrianglesAndAddToVirtualScene(ObjModel* model, int* k, const char* fil
     // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0); // XXX Errado!
 
     glBindVertexArray(0);
-
-    (*k) += 1;
 }
 
 // Carrega um Vertex Shader de um arquivo. Veja definição de LoadShader() abaixo.
@@ -1221,14 +1229,6 @@ void CursorPosCallback(GLFWwindow* window, double xpos, double ypos)
 
     if (g_RightMouseButtonPressed)
     {
-        // Deslocamento do cursor do mouse em x e y de coordenadas de tela!
-        float dx = xpos - g_LastCursorPosX;
-        float dy = ypos - g_LastCursorPosY;
-
-        // Atualizamos parâmetros da antebraço com os deslocamentos
-        g_ForearmAngleZ -= 0.01f*dx;
-        g_ForearmAngleX += 0.01f*dy;
-
         // Atualizamos as variáveis globais para armazenar a posição atual do
         // cursor como sendo a última posição conhecida do cursor.
         g_LastCursorPosX = xpos;
@@ -1237,14 +1237,6 @@ void CursorPosCallback(GLFWwindow* window, double xpos, double ypos)
 
     if (g_MiddleMouseButtonPressed)
     {
-        // Deslocamento do cursor do mouse em x e y de coordenadas de tela!
-        float dx = xpos - g_LastCursorPosX;
-        float dy = ypos - g_LastCursorPosY;
-
-        // Atualizamos parâmetros da antebraço com os deslocamentos
-        g_TorsoPositionX += 0.01f*dx;
-        g_TorsoPositionY -= 0.01f*dy;
-
         // Atualizamos as variáveis globais para armazenar a posição atual do
         // cursor como sendo a última posição conhecida do cursor.
         g_LastCursorPosX = xpos;
@@ -1301,10 +1293,6 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
         g_AngleX = 0.0f;
         g_AngleY = 0.0f;
         g_AngleZ = 0.0f;
-        g_ForearmAngleX = 0.0f;
-        g_ForearmAngleZ = 0.0f;
-        g_TorsoPositionX = 0.0f;
-        g_TorsoPositionY = 0.0f;
     }
 
     // Se o usuário apertar a tecla P, utilizamos projeção perspectiva.

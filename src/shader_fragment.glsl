@@ -28,7 +28,7 @@ uniform vec3 kd;
 uniform vec3 ks;
 
 // Identificacao do obj
-uniform int id;
+uniform int obj_id;
 
 // Variáveis para acesso das imagens de textura
 uniform sampler2D TextureImage0;
@@ -77,7 +77,7 @@ void main()
     // Obtemos a refletância difusa a partir da leitura da imagem TextureImageK
     vec3 Kd0;
 
-    switch(id)
+    switch(obj_id)
     {
         case 0:
             Kd0 = texture(TextureImage0, texcoords).rgb;
@@ -127,6 +127,8 @@ void main()
             Kd0 = vec3(0.5f, 0.5f, 0.5f);
             break;
     }
+
+    //Kd0 = texture(TextureImage1, texcoords).rgb;
 
     // Equação de Iluminação
     float lambert = max(0, dot(n,l));

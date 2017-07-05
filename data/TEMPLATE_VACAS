@@ -1,5 +1,5 @@
-0.00 0.00 0.00   # Rotação da primeira instância da vaca
-0.00 0.00 0.00   # Posição da primeira instância da vaca
+0.00 0.00 0.00   # Rotação da primeira instância da vaca (X,Y,Z), em graus
+0.00 0.00 0.00   # Posição da primeira instância da vaca (X,Y,Z)
 0.00 0.00 0.00   # Rotação da segunda instância da vaca
 0.00 0.00 0.00   # Posição da segunda instância da vaca
 #...

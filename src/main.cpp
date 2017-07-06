@@ -3,9 +3,10 @@
 //       Departamento de Informática Aplicada
 //
 // INF01047 Fundamentos de Computação Gráfica 2017/1
-//               Prof. Eduardo Gastal
+//               Bernardo Trevizan (285638)
+//               Vinicius Meireles (385637)
 //
-//                   LABORATÓRIO 4
+//                   TRABALHO FINAL
 //
 
 // Arquivos "headers" padrões de C podem ser incluídos em um
@@ -174,22 +175,18 @@ bool g_MiddleMouseButtonPressed = false; // Análogo para botão do meio do mous
 // efetiva da câmera é calculada dentro da função main(), dentro do loop de
 // renderização.
 float g_CameraTheta = 0.0f; // Ângulo no plano ZX em relação ao eixo Z
-float g_CameraPhi = 0.0f;   // Ângulo em relação ao eixo Y
-float g_CameraDistance = 3.5f; // Distância da câmera para a origem
-
-// Posição do centro da nave
-float dx = 0.0f;
-float dy = 2.0f;
-float dz = 0.0f;
+float g_CameraPhi = 0.5209f;   // Ângulo em relação ao eixo Y
+float g_CameraDistance = 6.0f; // Distância da câmera para a origem
 
 // Variáveis que controlam o movimento da nave
 bool wKeyPressed = false;
 bool sKeyPressed = false;
 bool aKeyPressed = false;
 bool dKeyPressed = false;
+bool spaceKeyPressed = false;
 
 // Camera
-glm::vec4 camera_position_c  = glm::vec4(1.0f,1.0f,1.0f,1.0f); // Ponto "c", centro da câmera
+glm::vec4 camera_position_c  = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f); // Ponto "c", centro da câmera
 glm::vec4 camera_up_vector   = glm::vec4(0.0f,1.0f,0.0f,0.0f); // Vetor "up"
 
 // Matriz do modelo, utilizada na detecção de colisão
@@ -294,7 +291,8 @@ int main(int argc, char* argv[])
     LoadShadersFromFiles();
 
     // Construímos a representação de objetos geométricos através de malhas de triângulos
-    std::vector<const char*> objNames = {"arvore","banheiro","casa","celeiro","chao","cone","disco","silo","trator","turbina","vaca"};
+    // std::vector<const char*> objNames = {"arvore","banheiro","casa","celeiro","chao","cone","disco","silo","trator","turbina","vaca"};
+    std::vector<const char*> objNames = {"arvore","disco","chao","cone"};
     std::vector<const char*>::iterator it;
 
     int k = 0;
@@ -337,7 +335,7 @@ int main(int argc, char* argv[])
     glm::mat4 the_view;
 
     // Velocidade do movimento
-    float delta = 0.1f;
+    float delta = 0.15f;
 
     // Ficamos em loop, renderizando, até que o usuário feche a janela
     while (!glfwWindowShouldClose(window))
@@ -364,7 +362,7 @@ int main(int argc, char* argv[])
         // variáveis g_CameraDistance, g_CameraPhi, e g_CameraTheta são
         // controladas pelo mouse do usuário. Veja as funções CursorPosCallback()
         // e ScrollCallback().
-        float r = g_CameraDistance + 5;
+        float r = g_CameraDistance;
         float y = r*sin(-g_CameraPhi);
         float z = r*cos(-g_CameraPhi)*cos(g_CameraTheta);
         float x = r*cos(-g_CameraPhi)*sin(g_CameraTheta);
@@ -400,9 +398,18 @@ int main(int argc, char* argv[])
         model = Matrix_Identity(); // Transformação identidade de modelagem
 
         glm::vec4 l = camera_position_c + camera_view_vector;
-        model = Matrix_Translate(l.x, l.y, l.z);
+        model = Matrix_Translate(l.x, 0.0f, l.z);
         glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
-        DrawVirtualObject("disco");
+        DrawVirtualObject("Disco");
+
+        if(spaceKeyPressed)
+        {
+            model = Matrix_Translate(l.x, 0.0f, l.z);
+            glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
+            DrawVirtualObject("Cone");
+        }
+
+        camera_position_c.y = 6.5f;
 
         // Computamos a matriz "View" utilizando os parâmetros da câmera para
         // definir o sistema de coordenadas da câmera.  Veja slide 162 do
@@ -415,8 +422,8 @@ int main(int argc, char* argv[])
         // Note que, no sistema de coordenadas da câmera, os planos near e far
         // estão no sentido negativo! Veja slides 180-183 do documento
         // "Aula_09_Projecoes.pdf".
-        float nearplane = -0.1f;  // Posição do "near plane"
-        float farplane  = -10.0f; // Posição do "far plane"
+        float nearplane = -0.5f;  // Posição do "near plane"
+        float farplane  = -25.0f; // Posição do "far plane"
 
         if (g_UsePerspectiveProjection)
         {
@@ -1223,7 +1230,7 @@ void CursorPosCallback(GLFWwindow* window, double xpos, double ypos)
 
         // Em coordenadas esféricas, o ângulo phi deve ficar entre -pi/2 e +pi/2.
         float phimax = M_PI/2.0f;
-        float phimin = 0;
+        float phimin = -phimax;
 
         if (g_CameraPhi > phimax)
             g_CameraPhi = phimax;
@@ -1355,6 +1362,12 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
 
     if (key == GLFW_KEY_D && action == GLFW_RELEASE)
         dKeyPressed = false;
+
+    if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)
+        spaceKeyPressed = true;
+
+    if (key == GLFW_KEY_SPACE && action == GLFW_RELEASE)
+        spaceKeyPressed = false;
 }
 
 // Definimos o callback para impressão de erros da GLFW no terminal

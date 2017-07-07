@@ -401,17 +401,21 @@ int main(int argc, char* argv[])
 
         glm::vec4 l = camera_position_c + camera_view_vector;
         model = Matrix_Translate(l.x, 0.0f, l.z);
-        g_VirtualScene["Disco"].pos = glm::vec3(l.x, 0.0f, l.z);
         glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
         DrawVirtualObject("Disco");
+
+        g_VirtualScene["Disco"].pos.pop_back();
+        g_VirtualScene["Disco"].pos.push_back(glm::vec3(l.x, 0.0f, l.z));
 
         if(spaceKeyPressed)
         {
             // Desenhamos um cone embaixo do disco quando aperta-se a barra de espaco
             model = Matrix_Translate(l.x, 0.0f, l.z);
-            g_VirtualScene["Cone"].pos = glm::vec3(l.x, 0.0f, l.z);
             glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
             DrawVirtualObject("Cone");
+
+            g_VirtualScene["Cone"].pos.pop_back();
+            g_VirtualScene["Cone"].pos.push_back(glm::vec3(l.x, 0.0f, l.z));
         }
 
         camera_position_c.y = 6.5f; // matem a altura da camera constante
@@ -475,13 +479,13 @@ int main(int argc, char* argv[])
                     if(spaceKeyPressed) // se a nave esta em trabalho de abducao
                     {
                         // Verifica intersecao com o disco (a vaca chegou na nave)
-                        if(isIntersecting(&obj, it, &g_VirtualScene["Disco"]))
+                        if(isIntersecting(&obj, &pos, &g_VirtualScene["Disco"]))
                         {
                             cowUp = false;
                             obj.pos.erase(it); // a vaca some
                         }
                         // Verifica interseccao com o cone
-                        else if(isIntersecting(&obj, it, &g_VirtualScene["Cone"]))
+                        else if(isIntersecting(&obj, &pos, &g_VirtualScene["Cone"]))
                         {
                             cowUp = true;
                             anm = glm::vec3(0.0f, delta, 0.0f); // a vaca sobe

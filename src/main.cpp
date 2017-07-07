@@ -59,7 +59,7 @@ struct ObjModel
     // Veja: https://github.com/syoyo/tinyobjloader
     ObjModel(const char* filename, const char* basepath = NULL, bool triangulate = true)
     {
-        printf("Carregando modelo \"%s\"...\n", filename);
+        printf("Carregando modelo \"%s\"... ", filename);
 
         std::string err;
 
@@ -572,7 +572,7 @@ void LoadTextureImage(const char* filename)
     strcpy(filepath, filename);
     strcat(filepath, ".png");
 
-    printf("\nCarregando imagem \"%s\"... ", filepath);
+    printf("Carregando imagem \"%s\"... ", filepath);
 
     // Primeiro fazemos a leitura da imagem do disco
     stbi_set_flip_vertically_on_load(true);
@@ -583,11 +583,11 @@ void LoadTextureImage(const char* filename)
 
     if ( data == NULL )
     {
-        fprintf(stderr, "\nERROR: Cannot open image file \"%s\".\n", filepath);
+        fprintf(stderr, "\nERROR: Cannot open image file \"%s\".\n\n", filepath);
         std::exit(EXIT_FAILURE);
     }
 
-    printf("OK (%dx%d).\n", width, height);
+    printf("OK (%dx%d).\n\n", width, height);
 
     // Agora criamos objetos na GPU com OpenGL para armazenar a textura
     GLuint texture_id;
@@ -900,6 +900,8 @@ void BuildTrianglesAndAddToVirtualScene(ObjModel* model, int* k, const char* fil
         theobject.specular = glm::vec3(model->materials[shape].specular[0], model->materials[shape].specular[1], model->materials[shape].specular[2]);
 
         // Carregar posicoes
+        printf("Carregando as posições do modelo... ");
+
         char pospath[100];
         strcpy(pospath, filename);
         strcat(pospath, ".pos");
@@ -908,7 +910,7 @@ void BuildTrianglesAndAddToVirtualScene(ObjModel* model, int* k, const char* fil
         posfile.open(pospath);
 
         if(!posfile)
-            printf("\nErro ao ler as posições do modelo.");
+            printf("Erro ao ler as posições do modelo.\n");
         else
         {
             std::string line;
@@ -931,7 +933,7 @@ void BuildTrianglesAndAddToVirtualScene(ObjModel* model, int* k, const char* fil
 
                 if (!(coord >> x >> y >> z))
                 {
-                    printf("\nOcorreu um erro durante a leitura das posições do modelo.");
+                    printf("\nOcorreu um erro durante a leitura das posições do modelo.\n");
                     break;
                 }
 
@@ -940,9 +942,12 @@ void BuildTrianglesAndAddToVirtualScene(ObjModel* model, int* k, const char* fil
             }
 
             posfile.close();
+            printf("OK\n");
         }
 
         // Carregar coeficientes de animacao
+        printf("Carregando animações do modelo... ");
+
         char anmpath[100];
         strcpy(anmpath, filename);
         strcat(anmpath, ".anm");
@@ -951,7 +956,7 @@ void BuildTrianglesAndAddToVirtualScene(ObjModel* model, int* k, const char* fil
         anm.open(anmpath);
 
         if(!anm)
-            printf("\nErro ao ler os coeficientes de animação do modelo.");
+            printf("Erro ao ler os coeficientes de animação do modelo.\n");
         else
         {
             std::string line;
@@ -961,11 +966,13 @@ void BuildTrianglesAndAddToVirtualScene(ObjModel* model, int* k, const char* fil
             float x = 0.0f, y = 0.0f, z = 0.0f;
 
             if (!(coord >> x >> y >> z))
-                printf("\nOcorreu um erro durante a leitura dos coeficientes de animação do modelo.");
+                printf("\nOcorreu um erro durante a leitura dos coeficientes de animação do modelo.\n");
 
             theobject.animation = glm::vec3(x, y, z);
 
             anm.close();
+
+            printf("OK\n");
         }
 
         g_VirtualScene[model->shapes[shape].name] = theobject;

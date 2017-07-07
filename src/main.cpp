@@ -1683,7 +1683,7 @@ float randAngle()
 
 float rad(float d)
 {
-    return (d * 180) / M_PI;
+    return (d * M_PI) / 180;
 }
 
 bool isIntersecting(SceneObject* obj1, glm::vec3* coord, SceneObject* obj2)

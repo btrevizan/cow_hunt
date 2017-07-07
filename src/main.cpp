@@ -117,6 +117,7 @@ void TextRendering_ShowProjection(GLFWwindow* window);
 void TextRendering_ShowFramesPerSecond(GLFWwindow* window);
 void TextRendering_ShowCowCount(GLFWwindow* window);
 void TextRendering_ShowTimer(GLFWwindow* window);
+void TextRendering_ShowGameOver(GLFWwindow* window);
 
 // Funções callback para comunicação com o sistema operacional e interação do
 // usuário. Veja mais comentários nas definições das mesmas, abaixo.
@@ -231,11 +232,14 @@ GLint ks_uniform;
 GLuint g_NumLoadedTextures = 0;
 
 #define M_PI 3.14159265358979323846
-void LoadObjAttr(const char* filename, SceneObject* obj);
-glm::vec3 getAnimation(glm::vec3* anm, glm::vec3* angles);
-float randAngle(); // gera um valor aleatorio entre 0 e PI
-float rad(float d); // converte graus para radianos
+#define TIME_LIMIT 60
+
 bool isIntersecting(SceneObject* obj1, glm::vec3* coord, glm::vec3* ang, SceneObject* obj2); // detecta se um objeto intersecta o outro
+glm::vec3 getAnimation(glm::vec3* anm, glm::vec3* angles);
+void LoadObjAttr(const char* filename, SceneObject* obj);
+float rad(float d); // converte graus para radianos
+float randAngle();  // gera um valor aleatorio entre 0 e PI
+void reset();
 
 int main(int argc, char* argv[])
 {
@@ -569,6 +573,12 @@ int main(int argc, char* argv[])
 
         // Mostra o tempo da partida
         TextRendering_ShowTimer(window);
+
+        if(timer >= TIME_LIMIT)
+        {
+            g_CameraPhi = rad(-90);
+            TextRendering_ShowGameOver(window);
+        }
 
         // O framebuffer onde a OpenGL executa as operações de renderização não
         // é o mesmo que está sendo mostrado para o usuário, caso contrário
@@ -1371,6 +1381,12 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
 
     if (key == GLFW_KEY_SPACE && action == GLFW_RELEASE)
         spaceKeyPressed = false;
+
+    if (key == GLFW_KEY_ENTER && action == GLFW_PRESS)
+    {
+        if(timer >= TIME_LIMIT)
+            reset(); // Reiniciar o jogo
+    }   
 }
 
 // Definimos o callback para impressão de erros da GLFW no terminal
@@ -1481,18 +1497,41 @@ void TextRendering_ShowCowCount(GLFWwindow* window)
     float lineheight = TextRendering_LineHeight(window);
     float charwidth = TextRendering_CharWidth(window);
 
-    char buffer[22];
-    snprintf(buffer, 22, "VACAS ABDUZIDAS: %d\n", cowCount);
+    char buffer[23];
+    snprintf(buffer, 23, "VACAS ABDUZIDAS: %d\n", cowCount);
 
-    TextRendering_PrintString(window, buffer, 1.0f-23*charwidth, 1.0f-lineheight, 1.2f);
+    TextRendering_PrintString(window, buffer, -1.0f+charwidth, 0.98f-lineheight, 1.5f);
 }
 
-// Escrevemos na tela quantas vacas já foram abduzidas
+// Escrevemos na tela o tempo da partida
 void TextRendering_ShowTimer(GLFWwindow* window)
 {
-    
+    if(timer >= TIME_LIMIT)
+        return;
+
+    float lineheight = TextRendering_LineHeight(window);
+    float charwidth = TextRendering_CharWidth(window);
+
+    char buffer[15];
+    snprintf(buffer, 15, "TEMPO: %ds\n", (int)timer);
+
+    TextRendering_PrintString(window, buffer, 1.0f-16*charwidth, 0.98f-lineheight, 1.5f);
 }
 
+// Escrevemos na tela game over
+void TextRendering_ShowGameOver(GLFWwindow* window)
+{
+    float lineheight = TextRendering_LineHeight(window);
+    float charwidth = TextRendering_CharWidth(window);
+
+    char buffer[10];
+    snprintf(buffer, 10, "GAME OVER\n");
+    TextRendering_PrintString(window, buffer, -0.06f-(35*charwidth)/2, lineheight, 5.0f);
+
+    char subbuffer[35];
+    snprintf(subbuffer, 35, "Pressione ENTER para reiniciar\n");
+    TextRendering_PrintString(window, subbuffer, -0.06f-(35*charwidth)/2, -lineheight-0.01f, 1.5f);
+}
 
 // Função para debugging: imprime no terminal todas informações de um modelo
 // geométrico carregado de um arquivo ".obj".
@@ -1847,6 +1886,22 @@ bool isIntersecting(SceneObject* obj1, glm::vec3* coord, glm::vec3* ang, SceneOb
     }
 
     return false;
+}
+
+void reset()
+{
+    // Carregamos as vacas novamente
+    int k = 10;
+    const char* basepath = "../../data/";
+    const char* filepath = "../../data/vaca";
+
+    ObjModel objmodel(filepath, basepath);
+    ComputeNormals(&objmodel);
+    BuildTrianglesAndAddToVirtualScene(&objmodel, &k, filepath);
+
+    g_CameraPhi = 0.5209f; // colocamos a  camera olhando para a nave novamente
+    init_clock = clock();  // zeramos o cronometro
+    cowCount = 0;          // zeramos a contagem de vacas abduzidas
 }
 
 // set makeprg=cd\ ..\ &&\ make\ run\ >/dev/null

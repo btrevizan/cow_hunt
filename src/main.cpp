@@ -107,6 +107,7 @@ void TextRendering_PrintMatrix(GLFWwindow* window, glm::mat4 M, float x, float y
 void TextRendering_PrintVector(GLFWwindow* window, glm::vec4 v, float x, float y, float scale = 1.0f);
 void TextRendering_PrintMatrixVectorProduct(GLFWwindow* window, glm::mat4 M, glm::vec4 v, float x, float y, float scale = 1.0f);
 void TextRendering_PrintMatrixVectorProductDivW(GLFWwindow* window, glm::mat4 M, glm::vec4 v, float x, float y, float scale = 1.0f);
+void TextRendering_ShowCowCount(GLFWwindow* window);
 
 // Funções abaixo renderizam como texto na janela OpenGL algumas matrizes e
 // outras informações do programa. Definidas após main().
@@ -129,19 +130,21 @@ void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
 struct SceneObject
 {
     int          id;
-    ObjModel*    model;       // referencia para o modelo do objeto
-    std::string  name;        // Nome do objeto
-    void*        first_index; // Índice do primeiro vértice dentro do vetor indices[] definido em BuildTrianglesAndAddToVirtualScene()
-    int          num_indices; // Número de índices do objeto dentro do vetor indices[] definido em BuildTrianglesAndAddToVirtualScene()
+    bool         hasAnm;         // se o obj tem animacao
+    bool         hasRandAngle;   // se o obj tem angulos aleatorios
+    ObjModel*    model;          // referencia para o modelo do objeto
+    std::string  name;           // Nome do objeto
+    void*        first_index;    // Índice do primeiro vértice dentro do vetor indices[] definido em BuildTrianglesAndAddToVirtualScene()
+    int          num_indices;    // Número de índices do objeto dentro do vetor indices[] definido em BuildTrianglesAndAddToVirtualScene()
     GLenum       rendering_mode; // Modo de rasterização (GL_TRIANGLES, GL_TRIANGLE_STRIP, etc.)
     GLuint       vertex_array_object_id; // ID do VAO onde estão armazenados os atributos do modelo
     glm::vec3    bbox_min; // Axis-Aligned Bounding Box do objeto
     glm::vec3    bbox_max;
-    glm::vec3    ambient; // refletancia ambiente
-    glm::vec3    diffuse; // refletancia difusa
+    glm::vec3    ambient;  // refletancia ambiente
+    glm::vec3    diffuse;  // refletancia difusa
     glm::vec3    specular; // refletancia especular
-    glm::vec3    animation; // coordenadas x,y,z para translacao
-    glm::vec3    angles;    // angulos de x,y,z para rotacao
+    std::vector<glm::vec3> animation; // coordenadas x,y,z para translacao
+    std::vector<glm::vec3> angles;    // angulos de x,y,z para rotacao
     std::vector<glm::vec3> pos;       // posiçoes das instancia do modelo
 };
 
@@ -188,6 +191,9 @@ bool spaceKeyPressed = false;
 // Variavel que controla se a vaca esta subindo
 bool cowUp = false;
 
+// Variavel que controla o número de vacas abduzidas
+unsigned int cowCount = 0;
+
 // Camera
 glm::vec4 camera_position_c  = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f); // Ponto "c", centro da câmera
 glm::vec4 camera_up_vector   = glm::vec4(0.0f,1.0f,0.0f,0.0f); // Vetor "up"
@@ -219,9 +225,11 @@ GLint ks_uniform;
 GLuint g_NumLoadedTextures = 0;
 
 #define M_PI 3.14159265358979323846
+void LoadObjAttr(const char* filename, SceneObject* obj);
+glm::vec3 getAnimation(glm::vec3* anm, glm::vec3* angles);
 float randAngle(); // gera um valor aleatorio entre 0 e PI
 float rad(float d); // converte graus para radianos
-bool isIntersecting(SceneObject* obj1, glm::vec3* coord, SceneObject* obj2); // detecta se um objeto intersecta o outro
+bool isIntersecting(SceneObject* obj1, glm::vec3* coord, glm::vec3* ang, SceneObject* obj2); // detecta se um objeto intersecta o outro
 
 int main(int argc, char* argv[])
 {
@@ -464,32 +472,44 @@ int main(int argc, char* argv[])
         glUniformMatrix4fv(projection_uniform , 1 , GL_FALSE , glm::value_ptr(projection));
 
         // Desenhamos os modelos
-        std::vector<glm::vec3>::iterator it;
+        std::vector<glm::vec3>::iterator itpos;   // iterator para as posicoes
+        std::vector<glm::vec3>::iterator itanm;   // iterator para as animacoes
+        std::vector<glm::vec3>::iterator itangle; // iterator para os angulos
 
         for(const auto& dict : g_VirtualScene)
         {
             SceneObject* obj = &g_VirtualScene[dict.second.name];
             if(obj->id != 5 && obj->id != 6) // se não for o disco ou o cone
             {
-                for(it = obj->pos.begin(); it != obj->pos.end(); it++)
+                itanm   = obj->animation.begin();
+                itangle = obj->angles.begin();
+
+                for(itpos = obj->pos.begin(); itpos != obj->pos.end(); itpos++)
                 {   
-                    int qtyObj = obj->pos.size();
-                    glm::vec3 anm = obj->animation;
+                    unsigned int qtyObj = obj->pos.size();
+
+                    glm::vec3 anm = *itanm;
+                    glm::vec3 angles = *itangle;
 
                     if(obj->id == 10) // se o obj e uma vaca
                     {
                         if(spaceKeyPressed) // se a nave esta em trabalho de abducao
                         {
-                            glm::vec3 pos = *it;
+                            glm::vec3 pos = *itpos;
 
                             // Verifica intersecao com o disco (a vaca chegou na nave)
-                            if(cowUp && isIntersecting(obj, &pos, &g_VirtualScene["Disco"]))
+                            if(cowUp && isIntersecting(obj, &pos, &angles, &g_VirtualScene["Disco"]))
                             {
+                                // a vaca some
+                                obj->pos.erase(itpos);
+                                obj->angles.erase(itangle);
+                                obj->animation.erase(itanm);
+
                                 cowUp = false;
-                                obj->pos.erase(it); // a vaca some
+                                cowCount++;
                             }
                             // Verifica interseccao com o cone
-                            else if(isIntersecting(obj, &pos, &g_VirtualScene["Cone"]))
+                            else if(isIntersecting(obj, &pos, &angles, &g_VirtualScene["Cone"]))
                             {
                                 cowUp = true;
                                 anm = glm::vec3(0.0f, delta, 0.0f); // a vaca sobe
@@ -498,10 +518,7 @@ int main(int argc, char* argv[])
                         else
                         {
                             if(cowUp) // parou de apertar espaco antes da vaca chegar na nave
-                            {
-                                (*it).y = 0.0f; // a vaca cai... e vive
-                                anm = obj->animation; // a vaca para de subir e segue sua vida
-                            }
+                                (*itpos).y = 0.0f; // a vaca cai... e vive
 
                             cowUp = false;
                         }
@@ -510,39 +527,30 @@ int main(int argc, char* argv[])
                     // Atualizamos a posicao do obj
                     if(qtyObj == obj->pos.size())
                     {
-                        (*it).x += anm.x;
-                        (*it).y += anm.y;
-                        (*it).z += anm.z;
+                        (*itpos).x += anm.x;
+                        (*itpos).y += anm.y;
+                        (*itpos).z += anm.z;
 
-                        model = Matrix_Translate((*it).x, (*it).y, (*it).z)
-                              * Matrix_Rotate_Z(obj->angles.z)
-                              * Matrix_Rotate_X(obj->angles.x)
-                              * Matrix_Rotate_Y(obj->angles.y);
+                        model = Matrix_Translate((*itpos).x, (*itpos).y, (*itpos).z)
+                              * Matrix_Rotate_Z(angles.z)
+                              * Matrix_Rotate_X(angles.x)
+                              * Matrix_Rotate_Y(angles.y);
 
                         glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
                         DrawVirtualObject(obj->name.c_str());
-                    }                
+                    }
+
+                    if(obj->hasRandAngle) itangle++;
+                    if(obj->hasAnm) itanm++;              
                 }
             }
         }
 
-        // Pegamos um vértice com coordenadas de modelo (0.5, 0.5, 0.5, 1) e o
-        // passamos por todos os sistemas de coordenadas armazenados nas
-        // matrizes the_model, the_view, e the_projection; e escrevemos na tela
-        // as matrizes e pontos resultantes dessas transformações.
-        //glm::vec4 p_model(0.5f, 0.5f, 0.5f, 1.0f);
-        //TextRendering_ShowModelViewProjection(window, projection, view, model, p_model);
-
-        // Imprimimos na tela os ângulos de Euler que controlam a rotação do
-        // terceiro cubo.
-        //TextRendering_ShowEulerAngles(window);
-
         // Imprimimos na informação sobre a matriz de projeção sendo utilizada.
-        //TextRendering_ShowProjection(window);
+        TextRendering_ShowProjection(window);
 
-        // Imprimimos na tela informação sobre o número de quadros renderizados
-        // por segundo (frames per second).
-        //TextRendering_ShowFramesPerSecond(window);
+        // Imprimimos quantas vacas foram abduzidas
+        TextRendering_ShowCowCount(window);
 
         // O framebuffer onde a OpenGL executa as operações de renderização não
         // é o mesmo que está sendo mostrado para o usuário, caso contrário
@@ -899,81 +907,8 @@ void BuildTrianglesAndAddToVirtualScene(ObjModel* model, int* k, const char* fil
         theobject.diffuse  = glm::vec3(model->materials[shape].diffuse[0], model->materials[shape].diffuse[1], model->materials[shape].diffuse[2]);
         theobject.specular = glm::vec3(model->materials[shape].specular[0], model->materials[shape].specular[1], model->materials[shape].specular[2]);
 
-        // Carregar posicoes
-        printf("Carregando as posições do modelo... ");
-
-        char pospath[100];
-        strcpy(pospath, filename);
-        strcat(pospath, ".pos");
-
-        std::ifstream posfile;
-        posfile.open(pospath);
-
-        if(!posfile)
-            printf("Erro ao ler as posições do modelo.\n");
-        else
-        {
-            std::string line;
-
-            // Primeira linha do arquivo define a rotacao do obj
-            std::getline(posfile, line);
-            std::istringstream rot(line);
-            float x, y, z;
-
-            rot >> x >> y >> z;
-
-            if(x == 360.0f && y == 360.0f && z == 360.0f)
-                theobject.angles = glm::vec3(0.0f, randAngle(), 0.0f);
-            else
-                theobject.angles = glm::vec3(rad(x), rad(y), rad(z));
-
-            while(std::getline(posfile, line))
-            {
-                std::istringstream coord(line);
-
-                if (!(coord >> x >> y >> z))
-                {
-                    printf("\nOcorreu um erro durante a leitura das posições do modelo.\n");
-                    break;
-                }
-
-                glm::vec3 one_pos = glm::vec3(x, y, z);
-                theobject.pos.push_back(one_pos);
-            }
-
-            posfile.close();
-            printf("OK\n");
-        }
-
-        // Carregar coeficientes de animacao
-        printf("Carregando animações do modelo... ");
-
-        char anmpath[100];
-        strcpy(anmpath, filename);
-        strcat(anmpath, ".anm");
-
-        std::ifstream anm;
-        anm.open(anmpath);
-
-        if(!anm)
-            printf("Erro ao ler os coeficientes de animação do modelo.\n");
-        else
-        {
-            std::string line;
-            std::getline(anm, line);
-
-            std::istringstream coord(line);
-            float x = 0.0f, y = 0.0f, z = 0.0f;
-
-            if (!(coord >> x >> y >> z))
-                printf("\nOcorreu um erro durante a leitura dos coeficientes de animação do modelo.\n");
-
-            theobject.animation = glm::vec3(x, y, z);
-
-            anm.close();
-
-            printf("OK\n");
-        }
+        // Carregar posicoes, angulos e animacoes
+        LoadObjAttr(filename, &theobject);
 
         g_VirtualScene[model->shapes[shape].name] = theobject;
     }
@@ -1522,6 +1457,19 @@ void TextRendering_ShowFramesPerSecond(GLFWwindow* window)
     TextRendering_PrintString(window, buffer, 1.0f-(numchars + 1)*charwidth, 1.0f-lineheight, 1.0f);
 }
 
+// Escrevemos na tela quantas vacas já foram abduzidas
+void TextRendering_ShowCowCount(GLFWwindow* window)
+{
+    float lineheight = TextRendering_LineHeight(window);
+    float charwidth = TextRendering_CharWidth(window);
+
+    char buffer[22];
+    snprintf(buffer, 22, "VACAS ABDUZIDAS: %d\n", cowCount);
+
+    TextRendering_PrintString(window, buffer, 1.0f-23*charwidth, 1.0f-lineheight, 1.0f);
+}
+
+
 // Função para debugging: imprime no terminal todas informações de um modelo
 // geométrico carregado de um arquivo ".obj".
 // Veja: https://github.com/syoyo/tinyobjloader/blob/22883def8db9ef1f3ffb9b404318e7dd25fdbb51/loader_example.cc#L98
@@ -1691,9 +1639,119 @@ void PrintObjModelInfo(ObjModel* model)
   }
 }
 
+void LoadObjAttr(const char* filename, SceneObject* obj)
+{
+    // Carregar coeficientes de animacao
+    printf("Carregando animações do modelo... ");
+
+    char anmpath[100];
+    strcpy(anmpath, filename);
+    strcat(anmpath, ".anm");
+
+    glm::vec3 animation = glm::vec3(0.0f, 0.0f, 0.0f);
+    std::ifstream anm;
+    anm.open(anmpath);
+
+    if(!anm)
+    {
+        obj->hasAnm = false;
+        obj->animation.push_back(animation);
+        printf("Erro ao ler os coeficientes de animação do modelo.\n");
+    }
+    else
+    {
+        obj->hasAnm = true;
+        std::string line;
+        float x, y, z;
+
+        std::getline(anm, line);
+        std::istringstream coord(line);
+    
+        if (!(coord >> x >> y >> z))
+            printf("\nOcorreu um erro durante a leitura dos coeficientes de animação do modelo.\n");
+
+        animation = glm::vec3(x, y, z);
+        anm.close();
+
+        printf("OK\n");
+    }
+
+    // Carregar posicoes e alinhar angulos e animacoes
+    printf("Carregando as posições do modelo... ");
+
+    char pospath[100];
+    strcpy(pospath, filename);
+    strcat(pospath, ".pos");
+
+    std::ifstream posfile;
+    posfile.open(pospath);
+
+    if(!posfile)
+        printf("Erro ao ler as posições do modelo.\n");
+    else
+    {
+        std::string line;
+        float x, y, z;
+
+        // Primeira linha do arquivo define a rotacao do obj
+        std::getline(posfile, line);
+
+        std::istringstream rot(line);
+        rot >> x >> y >> z;
+        // Verifica se os angulos de rotacao são aleatorios
+        obj->hasRandAngle = false;
+        glm::vec3 angles = glm::vec3(rad(x), rad(y), rad(z)); 
+
+        if(x == 360.0f && y == 360.0f && z == 360.0f)
+            obj->hasRandAngle = true;
+        else
+            obj->angles.push_back(angles);
+
+        // Posicoes
+        while(std::getline(posfile, line))
+        {
+            std::istringstream coord(line);
+
+            if (!(coord >> x >> y >> z))
+            {
+                printf("\nOcorreu um erro durante a leitura das posições do modelo.\n");
+                break;
+            }
+
+            glm::vec3 one_pos = glm::vec3(x, y, z);
+            obj->pos.push_back(one_pos);
+
+            // Para cada posicao há uma rotacao
+            if(obj->hasRandAngle)
+            {
+                angles = glm::vec3(0.0f, randAngle(), 0.0f);
+                obj->angles.push_back(angles);
+            }
+
+            if(obj->hasAnm)
+                obj->animation.push_back(getAnimation(&animation, &angles));
+        }
+
+        posfile.close();
+        printf("OK\n");
+    }
+}
+
+glm::vec3 getAnimation(glm::vec3* anm, glm::vec3* angles)
+{
+    glm::vec3 animation;
+
+    animation.x = (*anm).x * cos((*angles).y);
+    animation.z = (*anm).z * -sin((*angles).y);
+    animation.y = 0.0f;
+
+    return animation;
+}
+
 float randAngle()
 {
-    return (float)rand() / ((float)(RAND_MAX/M_PI));
+    float radians = (float) (rand() % 360);
+    return rad(radians);
 }
 
 float rad(float d)
@@ -1701,7 +1759,7 @@ float rad(float d)
     return (d * M_PI) / 180;
 }
 
-bool isIntersecting(SceneObject* obj1, glm::vec3* coord, SceneObject* obj2)
+bool isIntersecting(SceneObject* obj1, glm::vec3* coord, glm::vec3* ang, SceneObject* obj2)
 {
     glm::vec3 bbmax1 = obj1->bbox_max;
     glm::vec3 bbmin1 = obj1->bbox_min;
@@ -1710,25 +1768,29 @@ bool isIntersecting(SceneObject* obj1, glm::vec3* coord, SceneObject* obj2)
     glm::vec3 bbmin2 = obj2->bbox_min;
 
     glm::mat4 model;
-    std::vector<glm::vec3>::iterator it2;
+    std::vector<glm::vec3>::iterator itpos2;
+    std::vector<glm::vec3>::iterator itang2;
 
     glm::vec3 pos = *coord;
+    glm::vec3 angles = *ang;
+
     model = Matrix_Translate(pos.x, pos.y, pos.z)
-          * Matrix_Rotate_Z(obj1->angles.z)
-          * Matrix_Rotate_X(obj1->angles.x)
-          * Matrix_Rotate_Y(obj1->angles.y);
+          * Matrix_Rotate_Z(angles.z)
+          * Matrix_Rotate_X(angles.x)
+          * Matrix_Rotate_Y(angles.y);
 
     // Pontos max e min da bounding box já transformados pela matriz do modelo
     glm::vec4 max1 = model * glm::vec4(bbmax1.x, bbmax1.y, bbmax1.z, 1.0f);
     glm::vec4 min1 = model * glm::vec4(bbmin1.x, bbmin1.y, bbmin1.z, 1.0f);
 
-    for(it2 = obj2->pos.begin(); it2 != obj2->pos.end(); it2++)
+    itang2 = obj2->angles.begin();
+    for(itpos2 = obj2->pos.begin(); itpos2 != obj2->pos.end(); itpos2++)
     {
-        pos = *it2;
+        pos = *itpos2;
         model = Matrix_Translate(pos.x, pos.y, pos.z)
-              * Matrix_Rotate_Z(obj2->angles.z)
-              * Matrix_Rotate_X(obj2->angles.x)
-              * Matrix_Rotate_Y(obj2->angles.y);
+              * Matrix_Rotate_Z((*itang2).z)
+              * Matrix_Rotate_X((*itang2).x)
+              * Matrix_Rotate_Y((*itang2).y);
 
         glm::vec4 max2 = model * glm::vec4(bbmax2.x, bbmax2.y, bbmax2.z, 1.0f);
         glm::vec4 min2 = model * glm::vec4(bbmin2.x, bbmin2.y, bbmin2.z, 1.0f);
@@ -1756,6 +1818,8 @@ bool isIntersecting(SceneObject* obj1, glm::vec3* coord, SceneObject* obj2)
             min1.y >= min2.y && min1.y <= max2.y &&
             max1.z >= min2.z && max1.z <= max2.z)
             return true;
+
+        if(obj2->hasRandAngle) itang2++;
     }
 
     return false;

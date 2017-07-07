@@ -517,8 +517,11 @@ int main(int argc, char* argv[])
                         }
                         else
                         {
-                            if(cowUp) // parou de apertar espaco antes da vaca chegar na nave
+                            if(cowUp)
+                            { 
+                                // parou de apertar espaco antes da vaca chegar na nave
                                 (*itpos).y = 0.0f; // a vaca cai... e vive
+                            }
 
                             cowUp = false;
                         }

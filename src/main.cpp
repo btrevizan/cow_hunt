@@ -516,6 +516,8 @@ int main(int argc, char* argv[])
                             // Verifica intersecao com o disco (a vaca chegou na nave)
                             if(cowUp && isIntersecting(obj, &pos, &angles, &g_VirtualScene["Disco"]))
                             {
+                                printf("Vc abduziu uma vaca.\n");
+                                
                                 // a vaca some
                                 obj->pos.erase(itpos);
                                 obj->angles.erase(itangle);

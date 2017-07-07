@@ -41,7 +41,6 @@ uniform sampler2D TextureImage6;
 uniform sampler2D TextureImage7;
 uniform sampler2D TextureImage8;
 uniform sampler2D TextureImage9;
-uniform sampler2D TextureImage10;
 
 // O valor de saída ("out") de um Fragment Shader é a cor final do fragmento.
 out vec3 color;
@@ -99,28 +98,24 @@ void main()
             Kd0 = texture(TextureImage4, texcoords).rgb;
             break;
 
-        case 5:
+        case 6:
             Kd0 = texture(TextureImage5, texcoords).rgb;
             break;
 
-        case 6:
+        case 7:
             Kd0 = texture(TextureImage6, texcoords).rgb;
             break;
 
-        case 7:
+        case 8:
             Kd0 = texture(TextureImage7, texcoords).rgb;
             break;
 
-        case 8:
+        case 9:
             Kd0 = texture(TextureImage8, texcoords).rgb;
             break;
 
-        case 9:
-            Kd0 = texture(TextureImage9, texcoords).rgb;
-            break;
-
         case 10:
-            Kd0 = texture(TextureImage10, texcoords).rgb;
+            Kd0 = texture(TextureImage9, texcoords).rgb;
             break;
 
         default:

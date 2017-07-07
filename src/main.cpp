@@ -293,8 +293,8 @@ int main(int argc, char* argv[])
     LoadShadersFromFiles();
 
     // Construímos a representação de objetos geométricos através de malhas de triângulos
-    // std::vector<const char*> objNames = {"arvore","banheiro","casa","celeiro","chao","cone","disco","silo","trator","turbina","vaca"};
-    std::vector<const char*> objNames = {"arvore","disco","chao","cone"};
+    std::vector<const char*> objNames = {"arvore","banheiro","casa","celeiro","chao","cone","disco","silo","trator","turbina","vaca"};
+    //std::vector<const char*> objNames = {"arvore","disco","chao","cone"};
     std::vector<const char*>::iterator it;
 
     int k = 0;
@@ -310,7 +310,8 @@ int main(int argc, char* argv[])
         BuildTrianglesAndAddToVirtualScene(&objmodel, &k, filepath);
 
         // Carregamos textura do objeto
-        LoadTextureImage(filepath); // TextureImageK
+        if(k != 6) // não carrega quando for o cone
+            LoadTextureImage(filepath); // TextureImageK
     }
 
     if(argc > 1)
@@ -350,7 +351,7 @@ int main(int argc, char* argv[])
         // Conversaremos sobre sistemas de cores nas aulas de Rasterização.
         //
         //           R     G     B     A
-        glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+        glClearColor(0.3f, 0.6f, 1.0f, 0.5f);
 
         // "Pintamos" todos os pixels do framebuffer com a cor definida acima,
         // e também resetamos todos os pixels do Z-buffer (depth buffer).
@@ -400,12 +401,12 @@ int main(int argc, char* argv[])
         model = Matrix_Identity(); // Transformação identidade de modelagem
 
         glm::vec4 l = camera_position_c + camera_view_vector;
-        model = Matrix_Translate(l.x, 0.0f, l.z);
+        model = Matrix_Translate(l.x, 3.504f, l.z);
         glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
         DrawVirtualObject("Disco");
 
         g_VirtualScene["Disco"].pos.pop_back();
-        g_VirtualScene["Disco"].pos.push_back(glm::vec3(l.x, 0.0f, l.z));
+        g_VirtualScene["Disco"].pos.push_back(glm::vec3(l.x, 3.504f, l.z));
 
         if(spaceKeyPressed)
         {
@@ -431,8 +432,8 @@ int main(int argc, char* argv[])
         // Note que, no sistema de coordenadas da câmera, os planos near e far
         // estão no sentido negativo! Veja slides 180-183 do documento
         // "Aula_09_Projecoes.pdf".
-        float nearplane = -0.5f;  // Posição do "near plane"
-        float farplane  = -25.0f; // Posição do "far plane"
+        float nearplane = -0.6f;  // Posição do "near plane"
+        float farplane  = -30.0f; // Posição do "far plane"
 
         if (g_UsePerspectiveProjection)
         {
@@ -467,53 +468,61 @@ int main(int argc, char* argv[])
 
         for(const auto& dict : g_VirtualScene)
         {
-            SceneObject obj = dict.second;
-
-            for(it = obj.pos.begin(); it != obj.pos.end(); it++)
+            SceneObject* obj = &g_VirtualScene[dict.second.name];
+            if(obj->id != 5 && obj->id != 6) // se não for o disco ou o cone
             {
-                glm::vec3 pos = *it;
-                glm::vec3 anm = obj.animation;
+                for(it = obj->pos.begin(); it != obj->pos.end(); it++)
+                {   
+                    int qtyObj = obj->pos.size();
+                    glm::vec3 anm = obj->animation;
 
-                if(obj.id == 10) // se o obj e uma vaca
-                {
-                    if(spaceKeyPressed) // se a nave esta em trabalho de abducao
+                    if(obj->id == 10) // se o obj e uma vaca
                     {
-                        // Verifica intersecao com o disco (a vaca chegou na nave)
-                        if(isIntersecting(&obj, &pos, &g_VirtualScene["Disco"]))
+                        if(spaceKeyPressed) // se a nave esta em trabalho de abducao
                         {
+                            glm::vec3 pos = *it;
+
+                            // Verifica intersecao com o disco (a vaca chegou na nave)
+                            if(cowUp && isIntersecting(obj, &pos, &g_VirtualScene["Disco"]))
+                            {
+                                cowUp = false;
+                                obj->pos.erase(it); // a vaca some
+                            }
+                            // Verifica interseccao com o cone
+                            else if(isIntersecting(obj, &pos, &g_VirtualScene["Cone"]))
+                            {
+                                cowUp = true;
+                                anm = glm::vec3(0.0f, delta, 0.0f); // a vaca sobe
+                            }
+                        }
+                        else
+                        {
+                            if(cowUp) // parou de apertar espaco antes da vaca chegar na nave
+                            {
+                                (*it).y = 0.0f; // a vaca cai... e vive
+                                anm = obj->animation; // a vaca para de subir e segue sua vida
+                            }
+
                             cowUp = false;
-                            obj.pos.erase(it); // a vaca some
-                        }
-                        // Verifica interseccao com o cone
-                        else if(isIntersecting(&obj, &pos, &g_VirtualScene["Cone"]))
-                        {
-                            cowUp = true;
-                            anm = glm::vec3(0.0f, delta, 0.0f); // a vaca sobe
                         }
                     }
-                    else
+
+                    // Atualizamos a posicao do obj
+                    if(qtyObj == obj->pos.size())
                     {
-                        if(cowUp) // parou de apertar espaco antes da vaca chegar na nave
-                            (*it).y = 0.0f; // a vaca cai... e vive
+                        (*it).x += anm.x;
+                        (*it).y += anm.y;
+                        (*it).z += anm.z;
 
-                        cowUp = false;
-                    }
+                        model = Matrix_Translate((*it).x, (*it).y, (*it).z)
+                              * Matrix_Rotate_Z(obj->angles.z)
+                              * Matrix_Rotate_X(obj->angles.x)
+                              * Matrix_Rotate_Y(obj->angles.y);
+
+                        glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
+                        DrawVirtualObject(obj->name.c_str());
+                    }                
                 }
-
-                model = Matrix_Translate(pos.x + anm.x,
-                                         pos.y + anm.y,
-                                         pos.z + anm.z)
-                      * Matrix_Rotate_Z(obj.angles.z)
-                      * Matrix_Rotate_X(obj.angles.x)
-                      * Matrix_Rotate_Y(obj.angles.y);
-
-                glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
-                DrawVirtualObject(obj.name.c_str());
-
-                // Atualizamos a posicao do obj
-                (*it).x = pos.x + anm.x;
-                (*it).y = pos.y + anm.y;
-                (*it).z = pos.z + anm.z;
             }
         }
 
@@ -715,7 +724,6 @@ void LoadShadersFromFiles()
     glUniform1i(glGetUniformLocation(program_id, "TextureImage7"), 7);
     glUniform1i(glGetUniformLocation(program_id, "TextureImage8"), 8);
     glUniform1i(glGetUniformLocation(program_id, "TextureImage9"), 9);
-    glUniform1i(glGetUniformLocation(program_id, "TextureImage10"), 10);
     glUseProgram(0);
 }
 
@@ -1683,7 +1691,7 @@ float randAngle()
 
 float rad(float d)
 {
-    return (d * M_PI) / 180;
+    return (d * 180) / M_PI;
 }
 
 bool isIntersecting(SceneObject* obj1, glm::vec3* coord, SceneObject* obj2)

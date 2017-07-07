@@ -22,6 +22,7 @@
 #include <map>
 #include <stack>
 #include <string>
+#include <time.h>
 #include <vector>
 #include <limits>
 #include <fstream>
@@ -107,7 +108,6 @@ void TextRendering_PrintMatrix(GLFWwindow* window, glm::mat4 M, float x, float y
 void TextRendering_PrintVector(GLFWwindow* window, glm::vec4 v, float x, float y, float scale = 1.0f);
 void TextRendering_PrintMatrixVectorProduct(GLFWwindow* window, glm::mat4 M, glm::vec4 v, float x, float y, float scale = 1.0f);
 void TextRendering_PrintMatrixVectorProductDivW(GLFWwindow* window, glm::mat4 M, glm::vec4 v, float x, float y, float scale = 1.0f);
-void TextRendering_ShowCowCount(GLFWwindow* window);
 
 // Funções abaixo renderizam como texto na janela OpenGL algumas matrizes e
 // outras informações do programa. Definidas após main().
@@ -115,6 +115,8 @@ void TextRendering_ShowModelViewProjection(GLFWwindow* window, glm::mat4 project
 void TextRendering_ShowEulerAngles(GLFWwindow* window);
 void TextRendering_ShowProjection(GLFWwindow* window);
 void TextRendering_ShowFramesPerSecond(GLFWwindow* window);
+void TextRendering_ShowCowCount(GLFWwindow* window);
+void TextRendering_ShowTimer(GLFWwindow* window);
 
 // Funções callback para comunicação com o sistema operacional e interação do
 // usuário. Veja mais comentários nas definições das mesmas, abaixo.
@@ -194,6 +196,10 @@ bool cowUp = false;
 // Variavel que controla o número de vacas abduzidas
 unsigned int cowCount = 0;
 
+// Variaveis que controlam o tempo da partida
+clock_t init_clock;
+double timer;
+
 // Camera
 glm::vec4 camera_position_c  = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f); // Ponto "c", centro da câmera
 glm::vec4 camera_up_vector   = glm::vec4(0.0f,1.0f,0.0f,0.0f); // Vetor "up"
@@ -255,7 +261,7 @@ int main(int argc, char* argv[])
 
     // Criamos uma janela do sistema operacional
     GLFWwindow* window;
-    window = glfwCreateWindow(800, 600, "Cow Hunt", NULL, NULL);
+    window = glfwCreateWindow(1280, 720, "Cow Hunt", NULL, NULL);
     if (!window)
     {
         glfwTerminate();
@@ -284,7 +290,7 @@ int main(int argc, char* argv[])
     // redimensionada, por consequência alterando o tamanho do "framebuffer"
     // (região de memória onde são armazenados os pixels da imagem).
     glfwSetFramebufferSizeCallback(window, FramebufferSizeCallback);
-    FramebufferSizeCallback(window, 800, 600); // Forçamos a chamada do callback acima, para definir g_ScreenRatio.
+    FramebufferSizeCallback(window, 1280, 720); // Forçamos a chamada do callback acima, para definir g_ScreenRatio.
 
     // Imprimimos no terminal informações sobre a GPU do sistema
     const GLubyte *vendor      = glGetString(GL_VENDOR);
@@ -348,9 +354,15 @@ int main(int argc, char* argv[])
     // Velocidade do movimento
     float delta = 0.15f;
 
+    // Marca o tempo de inicio
+    init_clock = clock();
+
     // Ficamos em loop, renderizando, até que o usuário feche a janela
     while (!glfwWindowShouldClose(window))
     {
+        // Tempo da partida
+        timer = (clock() - init_clock) / (double) CLOCKS_PER_SEC;
+
         // Aqui executamos as operações de renderização
 
         // Definimos a cor do "fundo" do framebuffer como branco.  Tal cor é
@@ -554,6 +566,9 @@ int main(int argc, char* argv[])
 
         // Imprimimos quantas vacas foram abduzidas
         TextRendering_ShowCowCount(window);
+
+        // Mostra o tempo da partida
+        TextRendering_ShowTimer(window);
 
         // O framebuffer onde a OpenGL executa as operações de renderização não
         // é o mesmo que está sendo mostrado para o usuário, caso contrário
@@ -1469,7 +1484,13 @@ void TextRendering_ShowCowCount(GLFWwindow* window)
     char buffer[22];
     snprintf(buffer, 22, "VACAS ABDUZIDAS: %d\n", cowCount);
 
-    TextRendering_PrintString(window, buffer, 1.0f-23*charwidth, 1.0f-lineheight, 1.0f);
+    TextRendering_PrintString(window, buffer, 1.0f-23*charwidth, 1.0f-lineheight, 1.2f);
+}
+
+// Escrevemos na tela quantas vacas já foram abduzidas
+void TextRendering_ShowTimer(GLFWwindow* window)
+{
+    
 }
 
 

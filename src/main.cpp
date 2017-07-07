@@ -185,6 +185,9 @@ bool aKeyPressed = false;
 bool dKeyPressed = false;
 bool spaceKeyPressed = false;
 
+// Variavel que controla se a vaca esta subindo
+bool cowUp = false;
+
 // Camera
 glm::vec4 camera_position_c  = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f); // Ponto "c", centro da câmera
 glm::vec4 camera_up_vector   = glm::vec4(0.0f,1.0f,0.0f,0.0f); // Vetor "up"
@@ -218,8 +221,7 @@ GLuint g_NumLoadedTextures = 0;
 #define M_PI 3.14159265358979323846
 float randAngle(); // gera um valor aleatorio entre 0 e PI
 float rad(float d); // converte graus para radianos
-bool collision(SceneObject* obj1, SceneObject* obj2); // detecta a colisão entre objetos
-bool isIntersecting(SceneObject* obj1, SceneObject* obj2); // detecta se um objeto intersecta o outro
+bool isIntersecting(SceneObject* obj1, glm::vec3* coord, SceneObject* obj2); // detecta se um objeto intersecta o outro
 
 int main(int argc, char* argv[])
 {
@@ -399,17 +401,20 @@ int main(int argc, char* argv[])
 
         glm::vec4 l = camera_position_c + camera_view_vector;
         model = Matrix_Translate(l.x, 0.0f, l.z);
+        g_VirtualScene["Disco"].pos = glm::vec3(l.x, 0.0f, l.z);
         glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
         DrawVirtualObject("Disco");
 
         if(spaceKeyPressed)
         {
+            // Desenhamos um cone embaixo do disco quando aperta-se a barra de espaco
             model = Matrix_Translate(l.x, 0.0f, l.z);
+            g_VirtualScene["Cone"].pos = glm::vec3(l.x, 0.0f, l.z);
             glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
             DrawVirtualObject("Cone");
         }
 
-        camera_position_c.y = 6.5f;
+        camera_position_c.y = 6.5f; // matem a altura da camera constante
 
         // Computamos a matriz "View" utilizando os parâmetros da câmera para
         // definir o sistema de coordenadas da câmera.  Veja slide 162 do
@@ -463,10 +468,37 @@ int main(int argc, char* argv[])
             for(it = obj.pos.begin(); it != obj.pos.end(); it++)
             {
                 glm::vec3 pos = *it;
+                glm::vec3 anm = obj.animation;
 
-                model = Matrix_Translate(pos.x + obj.animation.x,
-                                         pos.y + obj.animation.y,
-                                         pos.z + obj.animation.z)
+                if(obj.id == 10) // se o obj e uma vaca
+                {
+                    if(spaceKeyPressed) // se a nave esta em trabalho de abducao
+                    {
+                        // Verifica intersecao com o disco (a vaca chegou na nave)
+                        if(isIntersecting(&obj, it, &g_VirtualScene["Disco"]))
+                        {
+                            cowUp = false;
+                            obj.pos.erase(it); // a vaca some
+                        }
+                        // Verifica interseccao com o cone
+                        else if(isIntersecting(&obj, it, &g_VirtualScene["Cone"]))
+                        {
+                            cowUp = true;
+                            anm = glm::vec3(0.0f, delta, 0.0f); // a vaca sobe
+                        }
+                    }
+                    else
+                    {
+                        if(cowUp) // parou de apertar espaco antes da vaca chegar na nave
+                            (*it).y = 0.0f; // a vaca cai... e vive
+
+                        cowUp = false;
+                    }
+                }
+
+                model = Matrix_Translate(pos.x + anm.x,
+                                         pos.y + anm.y,
+                                         pos.z + anm.z)
                       * Matrix_Rotate_Z(obj.angles.z)
                       * Matrix_Rotate_X(obj.angles.x)
                       * Matrix_Rotate_Y(obj.angles.y);
@@ -474,11 +506,10 @@ int main(int argc, char* argv[])
                 glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
                 DrawVirtualObject(obj.name.c_str());
 
-                (*it).x = pos.x + obj.animation.x;
-                (*it).y = pos.y + obj.animation.y;
-                (*it).z = pos.z + obj.animation.z;
-
-                //printf("%d\n", collision(obj, g_VirtualScene["arvore"]))
+                // Atualizamos a posicao do obj
+                (*it).x = pos.x + anm.x;
+                (*it).y = pos.y + anm.y;
+                (*it).z = pos.z + anm.z;
             }
         }
 
@@ -1651,49 +1682,64 @@ float rad(float d)
     return (d * 180) / M_PI;
 }
 
-bool isIntersecting(SceneObject* obj1, SceneObject* obj2)
+bool isIntersecting(SceneObject* obj1, glm::vec3* coord, SceneObject* obj2)
 {
+    glm::vec3 bbmax1 = obj1->bbox_max;
+    glm::vec3 bbmin1 = obj1->bbox_min;
+
+    glm::vec3 bbmax2 = obj2->bbox_max;
+    glm::vec3 bbmin2 = obj2->bbox_min;
+
+    glm::mat4 model;
+    std::vector<glm::vec3>::iterator it2;
+
+    glm::vec3 pos = *coord;
+    model = Matrix_Translate(pos.x, pos.y, pos.z)
+          * Matrix_Rotate_Z(obj1->angles.z)
+          * Matrix_Rotate_X(obj1->angles.x)
+          * Matrix_Rotate_Y(obj1->angles.y);
+
     // Pontos max e min da bounding box já transformados pela matriz do modelo
-    glm::vec3 bbox = obj1->bbox_max;
-    glm::vec4 max1 = model * glm::vec4(bbox.x, bbox.y, bbox.z, 1.0f);
-    bbox = obj1->bbox_min;
-    glm::vec4 min1 = model * glm::vec4(bbox.x, bbox.y, bbox.z, 1.0f);
+    glm::vec4 max1 = model * glm::vec4(bbmax1.x, bbmax1.y, bbmax1.z, 1.0f);
+    glm::vec4 min1 = model * glm::vec4(bbmin1.x, bbmin1.y, bbmin1.z, 1.0f);
 
-    bbox = obj2->bbox_max;
-    glm::vec4 max2 = model * glm::vec4(bbox.x, bbox.y, bbox.z, 1.0f);
-    bbox = obj2->bbox_min;
-    glm::vec4 min2 = model * glm::vec4(bbox.x, bbox.y, bbox.z, 1.0f);
+    for(it2 = obj2->pos.begin(); it2 != obj2->pos.end(); it2++)
+    {
+        pos = *it2;
+        model = Matrix_Translate(pos.x, pos.y, pos.z)
+              * Matrix_Rotate_Z(obj2->angles.z)
+              * Matrix_Rotate_X(obj2->angles.x)
+              * Matrix_Rotate_Y(obj2->angles.y);
 
-    // Testa se obj1 tem um canto inferior sobre do obj2
-    if (min1.x >= min2.x && min1.x <= max2.x &&
-        min1.y >= min2.y && min1.y <= max2.y &&
-        min1.z >= min2.z && min1.z <= max2.z)
-        return true;
+        glm::vec4 max2 = model * glm::vec4(bbmax2.x, bbmax2.y, bbmax2.z, 1.0f);
+        glm::vec4 min2 = model * glm::vec4(bbmin2.x, bbmin2.y, bbmin2.z, 1.0f);
 
-    // Testa se obj1 tem um canto superior sobre do obj2
-    if (max1.x >= min2.x && max1.x <= max2.x &&
-        max1.y >= min2.y && max1.y <= max2.y &&
-        max1.z >= min2.z && max1.z <= max2.z)
-        return true;
+        // Testa se obj1 tem um canto inferior sobre do obj2
+        if (min1.x >= min2.x && min1.x <= max2.x &&
+            min1.y >= min2.y && min1.y <= max2.y &&
+            min1.z >= min2.z && min1.z <= max2.z)
+            return true;
 
-    // Testa se obj1 está "dentro" do obj2
-    if (min1.x >= min2.x && min1.x <= max2.x &&
-        max1.y >= min2.y && max1.y <= max2.y &&
-        min1.z >= min2.z && min1.z <= max2.z)
-        return true;
+        // Testa se obj1 tem um canto superior sobre do obj2
+        if (max1.x >= min2.x && max1.x <= max2.x &&
+            max1.y >= min2.y && max1.y <= max2.y &&
+            max1.z >= min2.z && max1.z <= max2.z)
+            return true;
 
-    // Testa se obj1 está "dentro" do obj2
-    if (max1.x >= min2.x && max1.x <= max2.x &&
-        min1.y >= min2.y && min1.y <= max2.y &&
-        max1.z >= min2.z && max1.z <= max2.z)
-        return true;
+        // Testa se obj1 está "dentro" do obj2
+        if (min1.x >= min2.x && min1.x <= max2.x &&
+            max1.y >= min2.y && max1.y <= max2.y &&
+            min1.z >= min2.z && min1.z <= max2.z)
+            return true;
+
+        // Testa se obj1 está "dentro" do obj2
+        if (max1.x >= min2.x && max1.x <= max2.x &&
+            min1.y >= min2.y && min1.y <= max2.y &&
+            max1.z >= min2.z && max1.z <= max2.z)
+            return true;
+    }
 
     return false;
-}
-
-bool collision(SceneObject* obj1, SceneObject* obj2)
-{
-    return isIntersecting(obj1, obj2) || isIntersecting(obj2, obj1);
 }
 
 // set makeprg=cd\ ..\ &&\ make\ run\ >/dev/null

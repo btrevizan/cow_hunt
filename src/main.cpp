@@ -319,7 +319,6 @@ int main(int argc, char* argv[])
 
     // Construímos a representação de objetos geométricos através de malhas de triângulos
     std::vector<const char*> objNames = {"arvore","banheiro","casa","celeiro","chao","cone","disco","silo","trator","turbina","vaca"};
-    //std::vector<const char*> objNames = {"arvore","disco","chao","cone"};
     std::vector<const char*>::iterator it;
 
     int k = 0;
@@ -371,9 +370,6 @@ int main(int argc, char* argv[])
     // Ficamos em loop, renderizando, até que o usuário feche a janela
     while (!glfwWindowShouldClose(window))
     {
-        // Tempo da partida
-        timer = (clock() - init_clock) / (double) CLOCKS_PER_SEC;
-
         // Aqui executamos as operações de renderização
 
         // Definimos a cor do "fundo" do framebuffer como branco.  Tal cor é
@@ -508,7 +504,7 @@ int main(int argc, char* argv[])
                 itangle = obj->angles.begin();
 
                 for(itpos = obj->pos.begin(); itpos != obj->pos.end(); itpos++)
-                {   
+                {
                     unsigned int qtyObj = obj->pos.size();
 
                     glm::vec3 anm = *itanm;
@@ -524,7 +520,7 @@ int main(int argc, char* argv[])
                             if(cowUp && isIntersecting(obj, &pos, &angles, &g_VirtualScene["Disco"]))
                             {
                                 printf("Vc abduziu uma vaca.\n");
-                                
+
                                 // a vaca some
                                 obj->pos.erase(itpos);
                                 obj->angles.erase(itangle);
@@ -558,9 +554,9 @@ int main(int argc, char* argv[])
                             (*itanm).z = -(*itanm).z;
                             (*itangle).y += rad(180);
                         }
-                            
+
                         (*itpos).y += anm.y;
-                        
+
                         (*itpos).z += anm.z;
                         if((*itpos).z > tamanhoNivel || (*itpos).z < -tamanhoNivel)   // Se chegou à borda do mapa, inverte movimento
                         {
@@ -579,7 +575,7 @@ int main(int argc, char* argv[])
                     }
 
                     if(obj->hasRandAngle) itangle++;
-                    if(obj->hasAnm) itanm++;              
+                    if(obj->hasAnm) itanm++;
                 }
             }
         }
@@ -590,10 +586,13 @@ int main(int argc, char* argv[])
         // Imprimimos quantas vacas foram abduzidas
         TextRendering_ShowCowCount(window);
 
+        // Atualiza o tempo da partida
+        timer = TIME_LIMIT - ((clock() - init_clock) / (double) CLOCKS_PER_SEC);
+
         // Mostra o tempo da partida
         TextRendering_ShowTimer(window);
 
-        if(timer >= TIME_LIMIT)
+        if(timer <= 0)
         {
             g_CameraPhi = rad(-90);
             TextRendering_ShowGameOver(window);
@@ -1422,7 +1421,7 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
     if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)
     {
         spaceKeyPressed = true;
-            
+
         // Se expaço é precionado, o disco para
         wKeyPressed = false;
         sKeyPressed = false;
@@ -1433,7 +1432,7 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
     if (key == GLFW_KEY_SPACE && action == GLFW_RELEASE)
     {
         spaceKeyPressed = false;
-        
+
         // Recupera informação de movimento
         if(!wKeyReleased)
             wKeyPressed = true;
@@ -1447,9 +1446,9 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
 
     if (key == GLFW_KEY_ENTER && action == GLFW_PRESS)
     {
-        if(timer >= TIME_LIMIT)
+        if(timer <= 0)
             reset(); // Reiniciar o jogo
-    }   
+    }
 }
 
 // Definimos o callback para impressão de erros da GLFW no terminal
@@ -1569,7 +1568,7 @@ void TextRendering_ShowCowCount(GLFWwindow* window)
 // Escrevemos na tela o tempo da partida
 void TextRendering_ShowTimer(GLFWwindow* window)
 {
-    if(timer >= TIME_LIMIT)
+    if(timer <= 0)
         return;
 
     float lineheight = TextRendering_LineHeight(window);
@@ -1792,7 +1791,7 @@ void LoadObjAttr(const char* filename, SceneObject* obj)
 
         std::getline(anm, line);
         std::istringstream coord(line);
-    
+
         if (!(coord >> x >> y >> z))
             printf("\nOcorreu um erro durante a leitura dos coeficientes de animação do modelo.\n");
 
@@ -1826,7 +1825,7 @@ void LoadObjAttr(const char* filename, SceneObject* obj)
         rot >> x >> y >> z;
         // Verifica se os angulos de rotacao são aleatorios
         obj->hasRandAngle = false;
-        glm::vec3 angles = glm::vec3(rad(x), rad(y), rad(z)); 
+        glm::vec3 angles = glm::vec3(rad(x), rad(y), rad(z));
 
         if(x == 360.0f && y == 360.0f && z == 360.0f)
             obj->hasRandAngle = true;

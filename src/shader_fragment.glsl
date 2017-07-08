@@ -43,7 +43,7 @@ uniform sampler2D TextureImage8;
 uniform sampler2D TextureImage9;
 
 // O valor de saída ("out") de um Fragment Shader é a cor final do fragmento.
-out vec3 color;
+out vec4 color;
 
 // Constantes
 #define M_PI   3.14159265358979323846
@@ -75,6 +75,7 @@ void main()
 
     // Obtemos a refletância difusa a partir da leitura da imagem TextureImageK
     vec3 Kd0;
+    float alpha = 1.0f;
 
     switch(obj_id)
     {
@@ -96,6 +97,11 @@ void main()
 
         case 4:
             Kd0 = texture(TextureImage4, texcoords).rgb;
+            break;
+        
+        case 5: // cone
+            Kd0 = vec3(255.0f, 30.0f, 30.0f);
+            alpha = 0.2f;
             break;
 
         case 6:
@@ -123,12 +129,18 @@ void main()
             break;
     }
 
-    // Equação de Iluminação
-    float lambert = max(0, dot(n,l));
+    //Kd0 = texture(TextureImage1, texcoords).rgb;
 
-    color = Kd0 * (lambert + 0.01);
+    // Equação de Iluminação
+    float lambert = 0;
+    if(obj_id != 5) // Cone não recebe shading
+        lambert = max(0, dot(n,l));
+    
+    Kd0 = Kd0 * (lambert + 0.01);
+        
+    color = vec4(Kd0.x, Kd0.y, Kd0.z, alpha);
 
     // Cor final com correção gamma, considerando monitor sRGB.
     // Veja https://en.wikipedia.org/w/index.php?title=Gamma_correction&oldid=751281772#Windows.2C_Mac.2C_sRGB_and_TV.2Fvideo_standard_gammas
-    color = pow(color, vec3(1.0,1.0,1.0)/2.2);
+    color = pow(color, vec4(1.0,1.0,1.0,1.0)/2.2);
 }

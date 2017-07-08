@@ -12,20 +12,6 @@
 // Arquivos "headers" padrões de C podem ser incluídos em um
 // programa C++, sendo necessário somente adicionar o caractere
 // "c" antes de seu nome, e remover o sufixo ".h". Exemplo:
-//     Universidade Federal do Rio Grande do Sul
-//             Instituto de Informática
-//       Departamento de Informática Aplicada
-//
-// INF01047 Fundamentos de Computação Gráfica 2017/1
-//               Bernardo Trevizan (285638)
-//               Vinicius Meireles (385637)
-//
-//                   TRABALHO FINAL
-//
-
-// Arquivos "headers" padrões de C podem ser incluídos em um
-// programa C++, sendo necessário somente adicionar o caractere
-// "c" antes de seu nome, e remover o sufixo ".h". Exemplo:
 //    #include <stdio.h> // Em C
 //  vira
 //    #include <cstdio> // Em C++
@@ -208,6 +194,9 @@ bool aKeyReleased = true;
 bool sKeyReleased = true;
 bool dKeyReleased = true;
 bool spaceKeyPressed = false;
+
+// Variável que controla o tamanho do nível (até onde as vacas podem andar)
+float tamanhoNivel = 68.0f;
 
 // Variavel que controla se a vaca esta subindo
 bool cowUp = false;
@@ -443,22 +432,22 @@ int main(int argc, char* argv[])
         model = Matrix_Identity(); // Transformação identidade de modelagem
 
         glm::vec4 l = camera_position_c + camera_view_vector;
-        model = Matrix_Translate(l.x, 3.504f, l.z);
+        model = Matrix_Translate(l.x, 3.0f, l.z);
         glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
         DrawVirtualObject("Disco");
 
         g_VirtualScene["Disco"].pos.pop_back();
-        g_VirtualScene["Disco"].pos.push_back(glm::vec3(l.x, 3.504f, l.z));
+        g_VirtualScene["Disco"].pos.push_back(glm::vec3(l.x, 3.0f, l.z));
 
         if(spaceKeyPressed)
         {
             // Desenhamos um cone embaixo do disco quando aperta-se a barra de espaco
-            model = Matrix_Translate(l.x, 0.0f, l.z);
+            model = Matrix_Translate(l.x, -0.504f, l.z);
             glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
             DrawVirtualObject("Cone");
 
             g_VirtualScene["Cone"].pos.pop_back();
-            g_VirtualScene["Cone"].pos.push_back(glm::vec3(l.x, 0.0f, l.z));
+            g_VirtualScene["Cone"].pos.push_back(glm::vec3(l.x, -0.504f, l.z));
         }
 
         camera_position_c.y = 6.5f; // matem a altura da camera constante
@@ -475,7 +464,7 @@ int main(int argc, char* argv[])
         // estão no sentido negativo! Veja slides 180-183 do documento
         // "Aula_09_Projecoes.pdf".
         float nearplane = -0.6f;  // Posição do "near plane"
-        float farplane  = -90.0f; // Posição do "far plane"
+        float farplane  = -45.0f; // Posição do "far plane"
 
         if (g_UsePerspectiveProjection)
         {
@@ -551,7 +540,7 @@ int main(int argc, char* argv[])
                                 anm = glm::vec3(0.0f, delta, 0.0f); // a vaca sobe
                             }
                         }
-                        else if((*itpos).y > 0)
+                        else if((*itpos).y > 0.184919f)
                         {
                                 // parou de apertar espaco antes da vaca chegar na nave
                                 (*itpos).y -= delta; // a vaca cai... e vive
@@ -563,8 +552,22 @@ int main(int argc, char* argv[])
                     if(qtyObj == obj->pos.size())
                     {
                         (*itpos).x += anm.x;
+                        if((*itpos).x > tamanhoNivel || (*itpos).x < -tamanhoNivel)   // Se chegou à borda do mapa, inverte movimento
+                        {
+                            (*itanm).x = -(*itanm).x;
+                            (*itanm).z = -(*itanm).z;
+                            (*itangle).y += rad(180);
+                        }
+                            
                         (*itpos).y += anm.y;
+                        
                         (*itpos).z += anm.z;
+                        if((*itpos).z > tamanhoNivel || (*itpos).z < -tamanhoNivel)   // Se chegou à borda do mapa, inverte movimento
+                        {
+                            (*itanm).x = -(*itanm).x;
+                            (*itanm).z = -(*itanm).z;
+                            (*itangle).y += rad(180);
+                        }
 
                         model = Matrix_Translate((*itpos).x, (*itpos).y, (*itpos).z)
                               * Matrix_Rotate_Z(angles.z)
@@ -1258,7 +1261,7 @@ void CursorPosCallback(GLFWwindow* window, double xpos, double ypos)
         g_CameraPhi   += 0.01f*dy;
 
         // Em coordenadas esféricas, o ângulo phi deve ficar entre -pi/2 e +pi/2.
-        float phimax = M_PI/2.0f;
+        float phimax = (M_PI/2.0f) - 0.01f;
         float phimin = -phimax;
 
         if (g_CameraPhi > phimax)
@@ -1966,4 +1969,3 @@ void reset()
 
 // set makeprg=cd\ ..\ &&\ make\ run\ >/dev/null
 // vim: set spell spelllang=pt_br :
-

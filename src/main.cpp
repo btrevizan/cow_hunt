@@ -133,22 +133,21 @@ void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
 struct SceneObject
 {
     int          id;
-    bool         hasAnm;         // se o obj tem animacao
-    bool         hasRandAngle;   // se o obj tem angulos aleatorios
-    ObjModel*    model;          // referencia para o modelo do objeto
-    std::string  name;           // Nome do objeto
-    void*        first_index;    // Índice do primeiro vértice dentro do vetor indices[] definido em BuildTrianglesAndAddToVirtualScene()
-    int          num_indices;    // Número de índices do objeto dentro do vetor indices[] definido em BuildTrianglesAndAddToVirtualScene()
-    GLenum       rendering_mode; // Modo de rasterização (GL_TRIANGLES, GL_TRIANGLE_STRIP, etc.)
-    GLuint       vertex_array_object_id; // ID do VAO onde estão armazenados os atributos do modelo
-    glm::vec3    bbox_min; // Axis-Aligned Bounding Box do objeto
+    bool         hasAnm;                        // se o obj tem animacao
+    bool         hasRandAngle;                  // se o obj tem angulos aleatorios
+    std::string  name;                          // Nome do objeto
+    void*        first_index;                   // Índice do primeiro vértice dentro do vetor indices[] definido em BuildTrianglesAndAddToVirtualScene()
+    int          num_indices;                   // Número de índices do objeto dentro do vetor indices[] definido em BuildTrianglesAndAddToVirtualScene()
+    GLenum       rendering_mode;                // Modo de rasterização (GL_TRIANGLES, GL_TRIANGLE_STRIP, etc.)
+    GLuint       vertex_array_object_id;        // ID do VAO onde estão armazenados os atributos do modelo
+    glm::vec3    bbox_min;                      // Axis-Aligned Bounding Box do objeto
     glm::vec3    bbox_max;
-    glm::vec3    ambient;  // refletancia ambiente
-    glm::vec3    diffuse;  // refletancia difusa
-    glm::vec3    specular; // refletancia especular
-    std::vector<glm::vec3> animation; // coordenadas x,y,z para translacao
-    std::vector<glm::vec3> angles;    // angulos de x,y,z para rotacao
-    std::vector<glm::vec3> pos;       // posiçoes das instancia do modelo
+    glm::vec3    ambient;                       // refletancia ambiente
+    glm::vec3    diffuse;                       // refletancia difusa
+    glm::vec3    specular;                      // refletancia especular
+    std::vector<glm::vec3> animation;           // coordenadas x,y,z para translacao
+    std::vector<glm::vec3> angles;              // angulos de x,y,z para rotacao
+    std::vector<glm::vec3> pos;                 // posiçoes das instancia do modelo
 };
 
 // Abaixo definimos variáveis globais utilizadas em várias funções do código.
@@ -939,7 +938,6 @@ void BuildTrianglesAndAddToVirtualScene(ObjModel* model, int* k, const char* fil
         SceneObject theobject;
         theobject.id             = *k;
         theobject.name           = model->shapes[shape].name;
-        theobject.model          = model;
         theobject.first_index    = (void*)first_index; // Primeiro índice
         theobject.num_indices    = last_index - first_index + 1; // Número de indices
         theobject.rendering_mode = GL_TRIANGLES;       // Índices correspondem ao tipo de rasterização GL_TRIANGLES.

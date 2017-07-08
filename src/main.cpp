@@ -12,6 +12,20 @@
 // Arquivos "headers" padrões de C podem ser incluídos em um
 // programa C++, sendo necessário somente adicionar o caractere
 // "c" antes de seu nome, e remover o sufixo ".h". Exemplo:
+//     Universidade Federal do Rio Grande do Sul
+//             Instituto de Informática
+//       Departamento de Informática Aplicada
+//
+// INF01047 Fundamentos de Computação Gráfica 2017/1
+//               Bernardo Trevizan (285638)
+//               Vinicius Meireles (385637)
+//
+//                   TRABALHO FINAL
+//
+
+// Arquivos "headers" padrões de C podem ser incluídos em um
+// programa C++, sendo necessário somente adicionar o caractere
+// "c" antes de seu nome, e remover o sufixo ".h". Exemplo:
 //    #include <stdio.h> // Em C
 //  vira
 //    #include <cstdio> // Em C++
@@ -189,6 +203,10 @@ bool wKeyPressed = false;
 bool sKeyPressed = false;
 bool aKeyPressed = false;
 bool dKeyPressed = false;
+bool wKeyReleased = true;
+bool aKeyReleased = true;
+bool sKeyReleased = true;
+bool dKeyReleased = true;
 bool spaceKeyPressed = false;
 
 // Variavel que controla se a vaca esta subindo
@@ -457,7 +475,7 @@ int main(int argc, char* argv[])
         // estão no sentido negativo! Veja slides 180-183 do documento
         // "Aula_09_Projecoes.pdf".
         float nearplane = -0.6f;  // Posição do "near plane"
-        float farplane  = -30.0f; // Posição do "far plane"
+        float farplane  = -90.0f; // Posição do "far plane"
 
         if (g_UsePerspectiveProjection)
         {
@@ -533,15 +551,11 @@ int main(int argc, char* argv[])
                                 anm = glm::vec3(0.0f, delta, 0.0f); // a vaca sobe
                             }
                         }
-                        else
+                        else if((*itpos).y > 0)
                         {
-                            if(cowUp)
-                            { 
                                 // parou de apertar espaco antes da vaca chegar na nave
-                                (*itpos).y = 0.0f; // a vaca cai... e vive
-                            }
-
-                            cowUp = false;
+                                (*itpos).y -= delta; // a vaca cai... e vive
+                                cowUp = false;
                         }
                     }
 
@@ -1354,35 +1368,79 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
     }
 
     // Ativa ou não as variáveis de movimento
-    if (key == GLFW_KEY_W && action == GLFW_PRESS)
+    if (key == GLFW_KEY_W && action == GLFW_PRESS && !spaceKeyPressed)
+    {
         wKeyPressed = true;
+        wKeyReleased = false;
+    }
 
     if (key == GLFW_KEY_W && action == GLFW_RELEASE)
+    {
         wKeyPressed = false;
+        wKeyReleased = true;
+    }
 
-    if (key == GLFW_KEY_S && action == GLFW_PRESS)
+    if (key == GLFW_KEY_S && action == GLFW_PRESS && !spaceKeyPressed)
+    {
         sKeyPressed = true;
+        sKeyReleased = false;
+    }
 
     if (key == GLFW_KEY_S && action == GLFW_RELEASE)
+    {
         sKeyPressed = false;
+        sKeyReleased = true;
+    }
 
-    if (key == GLFW_KEY_A && action == GLFW_PRESS)
+    if (key == GLFW_KEY_A && action == GLFW_PRESS && !spaceKeyPressed)
+    {
         aKeyPressed = true;
+        aKeyReleased = false;
+    }
 
     if (key == GLFW_KEY_A && action == GLFW_RELEASE)
+    {
         aKeyPressed = false;
+        aKeyReleased = true;
+    }
 
-    if (key == GLFW_KEY_D && action == GLFW_PRESS)
+    if (key == GLFW_KEY_D && action == GLFW_PRESS && !spaceKeyPressed)
+    {
         dKeyPressed = true;
+        dKeyReleased = false;
+    }
 
     if (key == GLFW_KEY_D && action == GLFW_RELEASE)
+    {
         dKeyPressed = false;
+        dKeyReleased = true;
+    }
 
     if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)
+    {
         spaceKeyPressed = true;
+            
+        // Se expaço é precionado, o disco para
+        wKeyPressed = false;
+        sKeyPressed = false;
+        aKeyPressed = false;
+        dKeyPressed = false;
+    }
 
     if (key == GLFW_KEY_SPACE && action == GLFW_RELEASE)
+    {
         spaceKeyPressed = false;
+        
+        // Recupera informação de movimento
+        if(!wKeyReleased)
+            wKeyPressed = true;
+        if(!aKeyReleased)
+            aKeyPressed = true;
+        if(!sKeyReleased)
+            sKeyPressed = true;
+        if(!dKeyReleased)
+            dKeyPressed = true;
+    }
 
     if (key == GLFW_KEY_ENTER && action == GLFW_PRESS)
     {
@@ -1908,3 +1966,4 @@ void reset()
 
 // set makeprg=cd\ ..\ &&\ make\ run\ >/dev/null
 // vim: set spell spelllang=pt_br :
+

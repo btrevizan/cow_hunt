@@ -494,7 +494,7 @@ int main(int argc, char* argv[])
         std::vector<glm::vec3>::iterator itpos;   // iterator para as posicoes
         std::vector<glm::vec3>::iterator itanm;   // iterator para as animacoes
         std::vector<glm::vec3>::iterator itangle; // iterator para os angulos
-
+        
         for(const auto& dict : g_VirtualScene)
         {
             SceneObject* obj = &g_VirtualScene[dict.second.name];
@@ -679,6 +679,10 @@ void LoadTextureImage(const char* filename)
 // dos objetos na função BuildTrianglesAndAddToVirtualScene().
 void DrawVirtualObject(const char* object_name)
 {
+    // Habilita o calculo de transparencia
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
     // "Ligamos" o VAO. Informamos que queremos utilizar os atributos de
     // vértices apontados pelo VAO criado pela função BuildTrianglesAndAddToVirtualScene(). Veja
     // comentários detalhados dentro da definição de BuildTrianglesAndAddToVirtualScene().

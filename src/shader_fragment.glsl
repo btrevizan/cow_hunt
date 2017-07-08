@@ -98,10 +98,10 @@ void main()
         case 4:
             Kd0 = texture(TextureImage4, texcoords).rgb;
             break;
-
+        
         case 5: // cone
-            Kd0 = vec3(1.0f, 1.0f, 1.0f);
-            alpha = 0.5f;
+            Kd0 = vec3(255.0f, 30.0f, 30.0f);
+            alpha = 0.2f;
             break;
 
         case 6:
@@ -129,10 +129,15 @@ void main()
             break;
     }
 
-    // Equação de Iluminação
-    float lambert = max(0, dot(n,l));
+    //Kd0 = texture(TextureImage1, texcoords).rgb;
 
+    // Equação de Iluminação
+    float lambert = 0;
+    if(obj_id != 5) // Cone não recebe shading
+        lambert = max(0, dot(n,l));
+    
     Kd0 = Kd0 * (lambert + 0.01);
+        
     color = vec4(Kd0.x, Kd0.y, Kd0.z, alpha);
 
     // Cor final com correção gamma, considerando monitor sRGB.

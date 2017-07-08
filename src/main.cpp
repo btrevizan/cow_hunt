@@ -195,6 +195,10 @@ bool sKeyReleased = true;
 bool dKeyReleased = true;
 bool spaceKeyPressed = false;
 
+// Variáveis para controle do cone
+glm::vec3 discoPos;
+bool desenhaCone = false;
+
 // Variável que controla o tamanho do nível (até onde as vacas podem andar)
 float tamanhoNivel = 68.0f;
 
@@ -426,25 +430,11 @@ int main(int argc, char* argv[])
 
         // Desenhamos o disco voador em relação a camera
         model = Matrix_Identity(); // Transformação identidade de modelagem
-
         glm::vec4 l = camera_position_c + camera_view_vector;
-        model = Matrix_Translate(l.x, 3.0f, l.z);
-        glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
-        DrawVirtualObject("Disco");
+        discoPos = glm::vec3(l.x, 3.0f, l.z);
 
-        g_VirtualScene["Disco"].pos.pop_back();
-        g_VirtualScene["Disco"].pos.push_back(glm::vec3(l.x, 3.0f, l.z));
-
-        if(spaceKeyPressed)
-        {
-            // Desenhamos um cone embaixo do disco quando aperta-se a barra de espaco
-            model = Matrix_Translate(l.x, -0.504f, l.z);
-            glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
-            DrawVirtualObject("Cone");
-
-            g_VirtualScene["Cone"].pos.pop_back();
-            g_VirtualScene["Cone"].pos.push_back(glm::vec3(l.x, -0.504f, l.z));
-        }
+        if(spaceKeyPressed) // Desenhamos um cone embaixo do disco quando aperta-se a barra de espaco
+            desenhaCone = true;
 
         camera_position_c.y = 6.5f; // matem a altura da camera constante
 
@@ -578,6 +568,27 @@ int main(int argc, char* argv[])
                     if(obj->hasAnm) itanm++;
                 }
             }
+        }
+        
+        // Desenha disco
+        model = Matrix_Translate(discoPos.x, discoPos.y, discoPos.z);
+        glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
+        
+        g_VirtualScene["Disco"].pos.pop_back();
+        DrawVirtualObject("Disco");
+        g_VirtualScene["Disco"].pos.push_back(discoPos);
+        
+        // Desenha cone como filho do disco
+        if(desenhaCone)
+        {
+            model = Matrix_Translate(discoPos.x, -0.504f, discoPos.z);
+            glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
+            
+            DrawVirtualObject("Cone");
+            g_VirtualScene["Cone"].pos.pop_back();
+            g_VirtualScene["Cone"].pos.push_back(glm::vec3(discoPos.x, -0.504f, discoPos.z));
+            
+            desenhaCone = false;
         }
 
         // Imprimimos na informação sobre a matriz de projeção sendo utilizada.

@@ -276,7 +276,9 @@ int main(int argc, char* argv[])
 
     // Criamos uma janela do sistema operacional
     GLFWwindow* window;
-    window = glfwCreateWindow(1280, 720, "Cow Hunt", NULL, NULL);
+    window = glfwCreateWindow(1920, 1080, "Cow Hunt", NULL, NULL);
+    glfwSetWindowAspectRatio(window, 16, 9);
+    glfwSetWindowSize(window, 1280, 720);
     if (!window)
     {
         glfwTerminate();

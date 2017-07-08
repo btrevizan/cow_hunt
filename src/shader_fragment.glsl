@@ -22,10 +22,11 @@ uniform mat4 projection;
 uniform vec4 bbox_min;
 uniform vec4 bbox_max;
 
-// Parâmetros de refletância
-uniform vec3 ka;
-uniform vec3 kd;
-uniform vec3 ks;
+// Parâmetros que definem as propriedades espectrais da superfície
+vec3 Kd=vec3(0,0,0); // Refletância difusa
+vec3 Ks=vec3(0,0,0); // Refletância especular
+vec3 Ka=vec3(0,0,0); // Refletância ambiente
+float q = 1; // Expoente especular para o modelo de iluminação de Phong
 
 // Identificacao do obj
 uniform int obj_id;
@@ -73,72 +74,107 @@ void main()
     // Vetor que define o sentido da câmera em relação ao ponto atual.
     vec4 v = normalize(camera_position - p);
 
-    // Obtemos a refletância difusa a partir da leitura da imagem TextureImageK
-    vec3 Kd0;
+    // Vetor que define o sentido da reflexão especular ideal.
+    vec4 r = -l + 2*n*dot(n, l);
+    
     float alpha = 1.0f;
 
     switch(obj_id)
     {
-        case 0:
-            Kd0 = texture(TextureImage0, texcoords).rgb;
+        case 0: // Árvore
+            q = 32;
+            Ks = vec3(0.3500,0.3500,0.3500);
+            Kd = texture(TextureImage0, texcoords).rgb;
             break;
 
-        case 1:
-            Kd0 = texture(TextureImage1, texcoords).rgb;
+        case 1: // Banheiro
+            q = 9;
+            Ks = vec3(0.4680,0.4680,0.4680);
+            Kd = texture(TextureImage1, texcoords).rgb;
             break;
 
-        case 2:
-            Kd0 = texture(TextureImage2, texcoords).rgb;
+        case 2: // Casa
+            q = 20;
+            Ks = vec3(0.3,0.3,0.3);
+            Kd = texture(TextureImage2, texcoords).rgb;
             break;
 
-        case 3:
-            Kd0 = texture(TextureImage3, texcoords).rgb;
+        case 3: // Celeiro
+            q = 20;
+            Ks = vec3(0.3,0.3,0.3);
+            Kd = texture(TextureImage3, texcoords).rgb;
             break;
 
-        case 4:
-            Kd0 = texture(TextureImage4, texcoords).rgb;
+        case 4: // Chão
+            q = 5;
+            Kd = texture(TextureImage4, texcoords).rgb;
+            Ks = vec3(0.1,0.1,0.1);
             break;
         
         case 5: // cone
-            Kd0 = vec3(255.0f, 30.0f, 30.0f);
-            alpha = 0.2f;
+            q = 1;
+            Ks = vec3(0.0,0.0,0.0);
+            Kd = vec3(255.0f, 30.0f, 30.0f);
+            alpha = 0.3f;
             break;
 
-        case 6:
-            Kd0 = texture(TextureImage5, texcoords).rgb;
+        case 6: // disco
+            q = 40;
+            Kd = texture(TextureImage5, texcoords).rgb;
+            Ks = vec3(0.8550,0.8550,0.8550);
             break;
 
-        case 7:
-            Kd0 = texture(TextureImage6, texcoords).rgb;
+        case 7: // Silo
+            q = 27;
+            Ks = vec3(0.8280,0.8280,0.8280);
+            Kd = texture(TextureImage6, texcoords).rgb;
             break;
 
-        case 8:
-            Kd0 = texture(TextureImage7, texcoords).rgb;
+        case 8: // Trator
+            q = 20;
+            Ks = vec3(0.8100,0.8100,0.8100);
+            Kd = texture(TextureImage7, texcoords).rgb;
             break;
 
-        case 9:
-            Kd0 = texture(TextureImage8, texcoords).rgb;
+        case 9: // Turbina
+            q = 20;
+            Ks = vec3(0.8100,0.8100,0.8100);
+            Kd = texture(TextureImage8, texcoords).rgb;
             break;
 
-        case 10:
-            Kd0 = texture(TextureImage9, texcoords).rgb;
+        case 10:    // Vaca
+            q = 1;
+            Ks = vec3(0.0,0.0,0.0);
+            Kd = texture(TextureImage9, texcoords).rgb;
             break;
 
         default:
-            Kd0 = vec3(0.5f, 0.5f, 0.5f);
+            q = 1;
+            Ks = vec3(0.0,0.0,0.0);
+            Kd = vec3(255.0f, 0.0f, 255.0f);    // Se não há padrão, recebe magenta para fácil visualização
             break;
     }
+    
+    if(Kd.x<0.1 && Kd.y<0.1 && Kd.z<0.1 && obj_id!=6)    // Se está na sombra gerada pela textura, não reflete (a não ser no disco)
+        Ks = vec3(0.0,0.0,0.0);
 
-    //Kd0 = texture(TextureImage1, texcoords).rgb;
-
-    // Equação de Iluminação
+    // Lambert
     float lambert = 0;
     if(obj_id != 5) // Cone não recebe shading
         lambert = max(0, dot(n,l));
+
+    // Termo especular utilizando o modelo de iluminação de Phong
+    float phong_specular_term = pow(max(0.0, dot(r, v)), q);
+
+    // Espectro da fonte de iluminação
+    vec3 light_spectrum = vec3(1.0,1.0,1.0); // PREENCH AQUI o espectro da fonte de luz
     
-    Kd0 = Kd0 * (lambert + 0.01);
+    
+    
+    vec3 color3 = Kd * (lambert + 0.01) * light_spectrum
+                + Ks * light_spectrum * phong_specular_term;
         
-    color = vec4(Kd0.x, Kd0.y, Kd0.z, alpha);
+    color = vec4(color3.x, color3.y, color3.z, alpha);
 
     // Cor final com correção gamma, considerando monitor sRGB.
     // Veja https://en.wikipedia.org/w/index.php?title=Gamma_correction&oldid=751281772#Windows.2C_Mac.2C_sRGB_and_TV.2Fvideo_standard_gammas

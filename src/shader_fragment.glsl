@@ -123,8 +123,6 @@ void main()
             break;
     }
 
-    //Kd0 = texture(TextureImage1, texcoords).rgb;
-
     // Equação de Iluminação
     float lambert = max(0, dot(n,l));
 

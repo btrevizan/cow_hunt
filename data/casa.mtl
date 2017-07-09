@@ -6,11 +6,11 @@ newmtl baked_Material__1575
 	Ni 1.5000
 	d 1.0000
 	Tr 0.0000
-	Tf 1.0000 1.0000 1.0000 
+	Tf 1.0000 1.0000 1.0000
 	illum 2
 	Ka 0.5880 0.5880 0.5880
 	Kd 0.8078 0.8706 0.9451
-	Ks 0.6300 0.6300 0.6300
+	Ks 0.3000 0.3000 0.3000
 	Ke 0.0000 0.0000 0.0000
 	map_Ka /Users/vinim/Desktop/Cerberus/UFRGS/FCG/Trabalho/Texturas/CasaDiffuseMap.png
 	map_Kd /Users/vinim/Desktop/Cerberus/UFRGS/FCG/Trabalho/Texturas/CasaDiffuseMap.png

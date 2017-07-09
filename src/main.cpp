@@ -118,6 +118,7 @@ void TextRendering_ShowFramesPerSecond(GLFWwindow* window);
 void TextRendering_ShowCowCount(GLFWwindow* window);
 void TextRendering_ShowTimer(GLFWwindow* window);
 void TextRendering_ShowGameOver(GLFWwindow* window);
+void TextRendering_ShowVictory(GLFWwindow* window);
 
 // Funções callback para comunicação com o sistema operacional e interação do
 // usuário. Veja mais comentários nas definições das mesmas, abaixo.
@@ -212,6 +213,9 @@ unsigned int cowCount = 0;
 clock_t init_clock;
 double timer;
 
+// Variável que indica que está em uma tela de fim de jogo
+bool menu = false;
+
 // Camera
 glm::vec4 camera_position_c  = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f); // Ponto "c", centro da câmera
 glm::vec4 camera_up_vector   = glm::vec4(0.0f,1.0f,0.0f,0.0f); // Vetor "up"
@@ -244,6 +248,7 @@ GLuint g_NumLoadedTextures = 0;
 
 #define M_PI 3.14159265358979323846
 #define TIME_LIMIT 60
+#define MAX_VACAS 22
 
 bool isIntersecting(SceneObject* obj1, glm::vec3* coord, glm::vec3* ang, SceneObject* obj2); // detecta se um objeto intersecta o outro
 glm::vec3 getAnimation(glm::vec3* anm, glm::vec3* angles);
@@ -486,7 +491,7 @@ int main(int argc, char* argv[])
         std::vector<glm::vec3>::iterator itpos;   // iterator para as posicoes
         std::vector<glm::vec3>::iterator itanm;   // iterator para as animacoes
         std::vector<glm::vec3>::iterator itangle; // iterator para os angulos
-        
+
         for(const auto& dict : g_VirtualScene)
         {
             SceneObject* obj = &g_VirtualScene[dict.second.name];
@@ -571,25 +576,25 @@ int main(int argc, char* argv[])
                 }
             }
         }
-        
+
         // Desenha disco
         model = Matrix_Translate(discoPos.x, discoPos.y, discoPos.z);
         glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
-        
+
         g_VirtualScene["Disco"].pos.pop_back();
         DrawVirtualObject("Disco");
         g_VirtualScene["Disco"].pos.push_back(discoPos);
-        
+
         // Desenha cone como filho do disco
         if(desenhaCone)
         {
             model = Matrix_Translate(discoPos.x, -0.504f, discoPos.z);
             glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
-            
+
             DrawVirtualObject("Cone");
             g_VirtualScene["Cone"].pos.pop_back();
             g_VirtualScene["Cone"].pos.push_back(glm::vec3(discoPos.x, -0.504f, discoPos.z));
-            
+
             desenhaCone = false;
         }
 
@@ -605,10 +610,18 @@ int main(int argc, char* argv[])
         // Mostra o tempo da partida
         TextRendering_ShowTimer(window);
 
+        // Condições para fim do jogo
         if(timer <= 0)
         {
+            menu = true;
             g_CameraPhi = rad(-90);
             TextRendering_ShowGameOver(window);
+        }
+        else if(cowCount >= MAX_VACAS)
+        {
+            menu = true;
+            g_CameraPhi = rad(-90);
+            TextRendering_ShowVictory(window);
         }
 
         // O framebuffer onde a OpenGL executa as operações de renderização não
@@ -1594,7 +1607,10 @@ void TextRendering_ShowTimer(GLFWwindow* window)
     char buffer[15];
     snprintf(buffer, 15, "TEMPO: %ds\n", (int)timer);
 
-    TextRendering_PrintString(window, buffer, 1.0f-16*charwidth, 0.98f-lineheight, 1.5f);
+    if(!menu) // Se não está na tela de fim de jogo, mostra timer
+      TextRendering_PrintString(window, buffer, 1.0f-16*charwidth, 0.98f-lineheight, 1.5f);
+    else
+      TextRendering_PrintString(window, buffer, 1.0f-16*charwidth, 50.0f-lineheight, 1.5f);
 }
 
 // Escrevemos na tela game over
@@ -1610,6 +1626,27 @@ void TextRendering_ShowGameOver(GLFWwindow* window)
     char subbuffer[35];
     snprintf(subbuffer, 35, "Pressione ENTER para reiniciar\n");
     TextRendering_PrintString(window, subbuffer, -0.06f-(35*charwidth)/2, -lineheight-0.01f, 1.5f);
+}
+
+// Escrevemos na tela Victory
+void TextRendering_ShowVictory(GLFWwindow* window)
+{
+    float lineheight = TextRendering_LineHeight(window);
+    float charwidth = TextRendering_CharWidth(window);
+
+    char buffer[10];
+    snprintf(buffer, 10, "VITORIA!\n");
+    TextRendering_PrintString(window, buffer, -0.03f-(35*charwidth)/2, lineheight, 5.0f);
+
+    char buffer2[25];
+    snprintf(buffer2, 25, "Todas vacas abduzidas\n");
+    TextRendering_PrintString(window, buffer2, -0.045f-(35*charwidth)/2, -1.2*lineheight, 2.0f);
+
+    char subbuffer[35];
+    snprintf(subbuffer, 35, "Pressione ENTER para reiniciar\n");
+    TextRendering_PrintString(window, subbuffer, -0.06f-(35*charwidth)/2, -2.4*lineheight-0.01f, 1.5f);
+
+    timer = 0;
 }
 
 // Função para debugging: imprime no terminal todas informações de um modelo
@@ -1981,6 +2018,7 @@ void reset()
     g_CameraPhi = 0.5209f; // colocamos a  camera olhando para a nave novamente
     init_clock = clock();  // zeramos o cronometro
     cowCount = 0;          // zeramos a contagem de vacas abduzidas
+    menu = false;          // Indicamos que vai sair da tela de fim de jogo
 }
 
 // set makeprg=cd\ ..\ &&\ make\ run\ >/dev/null

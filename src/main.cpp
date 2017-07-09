@@ -200,9 +200,6 @@ bool spaceKeyPressed = false;
 glm::vec3 discoPos;
 bool desenhaCone = false;
 
-// Variável que controla o tamanho do nível (até onde as vacas podem andar)
-float tamanhoNivel = 68.0f;
-
 // Variavel que controla se a vaca esta subindo
 bool cowUp = false;
 
@@ -210,6 +207,7 @@ bool cowUp = false;
 unsigned int cowCount = 0;
 
 // Variaveis que controlam o tempo da partida
+// Por algum motivo funcionam perfeitamente no windows mas os segundos demoram mais no Linux
 clock_t init_clock;
 double timer;
 
@@ -248,7 +246,8 @@ GLuint g_NumLoadedTextures = 0;
 
 #define M_PI 3.14159265358979323846
 #define TIME_LIMIT 60
-#define MAX_VACAS 22
+#define MAX_VACAS 22  // Número de vacas necessário para ganhar o jogo
+#define tamanhoNivel 70.0f // Variável que controla o tamanho do nível (até onde as vacas podem andar)
 
 bool isIntersecting(SceneObject* obj1, glm::vec3* coord, glm::vec3* ang, SceneObject* obj2); // detecta se um objeto intersecta o outro
 glm::vec3 getAnimation(glm::vec3* anm, glm::vec3* angles);
@@ -423,17 +422,28 @@ int main(int argc, char* argv[])
         w = w / norm(w);
         u = u / norm(u);
 
-        if(wKeyPressed) // frente
-            camera_position_c += delta * (-w);
+        if(camera_position_c.x > tamanhoNivel)
+            camera_position_c.x -= delta*2;
+        else if(camera_position_c.x < -tamanhoNivel)
+            camera_position_c.x += delta*2;
+        else if(camera_position_c.z > tamanhoNivel)
+            camera_position_c.z -= delta*2;
+        else if(camera_position_c.z < -tamanhoNivel)
+            camera_position_c.z += delta*2;
+        else
+        {
+            if(wKeyPressed) // frente
+                camera_position_c += delta * (-w);
 
-        if(sKeyPressed) // ré
-            camera_position_c += delta * w;
+            if(sKeyPressed) // ré
+                camera_position_c += delta * w;
 
-        if(aKeyPressed) // esquerda
-            camera_position_c += delta * (-u);
+            if(aKeyPressed) // esquerda
+                camera_position_c += delta * (-u);
 
-        if(dKeyPressed) // direita
-            camera_position_c += delta * u;
+            if(dKeyPressed) // direita
+                camera_position_c += delta * u;
+        }
 
         // Desenhamos o disco voador em relação a camera
         model = Matrix_Identity(); // Transformação identidade de modelagem
@@ -535,10 +545,12 @@ int main(int argc, char* argv[])
                         }
                         else if((*itpos).y > 0.184919f)
                         {
-                                // parou de apertar espaco antes da vaca chegar na nave
-                                (*itpos).y -= delta; // a vaca cai... e vive
-                                cowUp = false;
+                            // parou de apertar espaco antes da vaca chegar na nave
+                            (*itpos).y -= delta; // a vaca cai... e vive
+                            cowUp = false;
                         }
+                        else if((*itpos).y < 0.1f && (*itpos).y > -10)
+                            (*itpos).y = 0.184919f; // Se está abaixo da posição inicial, sobe
                     }
 
                     // Atualizamos a posicao do obj

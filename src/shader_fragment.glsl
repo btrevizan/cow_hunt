@@ -76,7 +76,7 @@ void main()
 
     // Vetor que define o sentido da reflexão especular ideal.
     vec4 r = -l + 2*n*dot(n, l);
-    
+
     float alpha = 1.0f;
 
     switch(obj_id)
@@ -110,7 +110,7 @@ void main()
             Kd = texture(TextureImage4, texcoords).rgb;
             Ks = vec3(0.1,0.1,0.1);
             break;
-        
+
         case 5: // cone
             q = 1;
             Ks = vec3(0.0,0.0,0.0);
@@ -154,26 +154,26 @@ void main()
             Kd = vec3(255.0f, 0.0f, 255.0f);    // Se não há padrão, recebe magenta para fácil visualização
             break;
     }
-    
+
     if(Kd.x<0.1 && Kd.y<0.1 && Kd.z<0.1 && obj_id!=6)    // Se está na sombra gerada pela textura, não reflete (a não ser no disco)
         Ks = vec3(0.0,0.0,0.0);
 
     // Lambert
     float lambert = 0;
     if(obj_id != 5) // Cone não recebe shading
-        lambert = max(0, dot(n,l));
+        lambert = max(0, dot(n,l)) + 0.2;
 
     // Termo especular utilizando o modelo de iluminação de Phong
     float phong_specular_term = pow(max(0.0, dot(r, v)), q);
 
     // Espectro da fonte de iluminação
     vec3 light_spectrum = vec3(1.0,1.0,1.0); // PREENCH AQUI o espectro da fonte de luz
-    
-    
-    
+
+
+
     vec3 color3 = Kd * (lambert + 0.01) * light_spectrum
                 + Ks * light_spectrum * phong_specular_term;
-        
+
     color = vec4(color3.x, color3.y, color3.z, alpha);
 
     // Cor final com correção gamma, considerando monitor sRGB.

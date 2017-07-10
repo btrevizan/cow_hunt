@@ -119,7 +119,7 @@ void main()
             break;
 
         case 6: // disco
-            q = 40;
+            q = 500;
             kd = texture(TextureImage5, texcoords).rgb;
            // ks = vec3(0.8550,0.8550,0.8550);
             break;
@@ -137,7 +137,7 @@ void main()
             break;
 
         case 9: // Turbina
-            q = 20;
+            q = 50;
           //  ks = vec3(0.8100,0.8100,0.8100);
             kd = texture(TextureImage8, texcoords).rgb;
             break;
